@@ -1,3 +1,4 @@
+//board
 let board;
 const rowCount = 21;
 const columnCount = 19;
@@ -24,20 +25,20 @@ const tileMap = [
     "X XX XXX X XXX XX X",
     "X                 X",
     "X XX X XXXXX X XX X",
-    "X X    X X    X  X", 
+    "X X    X           ", 
     "XXXX XXXX XXXX XXXX",
-    "OOOX X      X XOOO",
+    "OOOX X    X        ",
     "XXXX X XXrXX X XXXX",
-    "O   bpo          O", 
+    "    bpo            ", 
     "XXXX X XXXXX X XXXX",
-    "OOOX X      X XOOO",
+    "OOOX X    X        ",
     "XXXX X XXXXX X XXXX",
     "X           X      X", 
     "X XX XXX X XXX XX X",
-    "X X    P       X X", 
+    "X X  P          X X", 
     "XX X X XXXXX X X XX",
-    "X X    X X    X  X",
-    "X XXXXXX X XXXXXX X",
+    "X      X      XX  X",
+    "X XXXXXX   XXXXXX X",
     "X                 X",
     "XXXXXXXXXXXXXXXXXXX"
 ];
@@ -49,38 +50,43 @@ let pacman = null;
 
 const directions = ['U', 'D', 'L', 'R']; //up down left right
 
+// ===================================
+// ⭐ SOUND OBJECTS ADDED HERE
+// ===================================
 const deathSound = new Audio('./pacman_death.wav');
 const beginningSound = new Audio('./pacman_beginning.wav'); 
 const chompSound = new Audio('./chomping.mp3'); 
-// ⭐ FIX: Reduced chomping sound volume by 50%
-chompSound.volume = 0.2;
+chompSound.volume = 0.2; // Reduced chomping sound volume by 80%
 const sirenSound = new Audio('./siren.mp3'); 
 sirenSound.loop = true; 
 sirenSound.volume = 0.6;
 
+
 let score = 0;
 let lives = 3;
 let gameOver = false;
-let gamePausedAfterDeath = false;
 let gameStarted = false; 
 let gameLoopTimeout; 
+let scoreSubmitted = false; // Flag for Game Over Modal/Score Submission
+let gamePausedAfterDeath = false; // Flag to stop movement/collision during death animation
+let showStartMessage = true; // Flag to show "Press START to Play!"
 
 window.onload = function() {
     board = document.getElementById("board");
     board.height = boardHeight;
     board.width = boardWidth;
-    context = board.getContext("2d"); 
+    context = board.getContext("2d"); //used for drawing on the board
 
     loadImages();
     
-    // Load walls only for initial screen drawing
-    loadMap(true, true); 
+    // Load map with NO entities for the initial black screen.
+    loadMap(false, false); 
     draw(); 
     
     // Keyboard controls
     document.addEventListener("keyup", handleInput);
 
-    // On-screen D-pad controls (unchanged)
+    // On-screen D-pad controls
     document.getElementById('up-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowUp'}); });
     document.getElementById('down-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowDown'}); });
     document.getElementById('left-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowLeft'}); });
@@ -90,7 +96,7 @@ window.onload = function() {
     document.getElementById('left-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput({code: 'ArrowLeft'}); });
     document.getElementById('right-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput({code: 'ArrowRight'}); });
 
-    // Leaderboard button event listeners (unchanged)
+    // Leaderboard button event listeners
     document.getElementById('showLeaderboardBtn').addEventListener('click', () => {
         fetchLeaderboard();
     });
@@ -102,21 +108,38 @@ window.onload = function() {
     // START/RESET BUTTON LOGIC 
     document.getElementById('start-btn').addEventListener('click', () => {
         if (!gameStarted) {
+            // Hide the start message and initialize all game entities
+            showStartMessage = false;
+            loadMap(true, false); // Load the maze, dots, pacman, ghosts
+            draw(); // Redraw immediately with the maze visible
+            
             startGame();
             document.getElementById('start-btn').textContent = 'Reset'; 
             document.getElementById('start-btn').classList.remove('bg-green-600');
             document.getElementById('start-btn').classList.add('bg-red-600');
-            // This will be updated to 'Ready!' inside startGame before the sound
         } else {
+            // Reset the game if it is currently running
             resetGame();
         }
     });
     
-    // Restart button event listener
+    // Restart button event listener (inside Game Over Modal)
     document.getElementById('restartGameBtn').addEventListener('click', () => {
         document.getElementById('gameOverModal').classList.add('hidden');
+        showStartMessage = false; 
+        loadMap(true, false); // Reload the map for the new level/restart
+        draw(); 
         startGame(true); 
     });
+
+    // Exit to Main Menu button event listener (inside Game Over Modal)
+    document.getElementById('exitToMenuBtn').addEventListener('click', () => {
+        document.getElementById('gameOverModal').classList.add('hidden');
+        resetGame(); 
+    }); 
+
+    // Submit Score button listener (inside Game Over Modal)
+    document.getElementById('submitScoreBtn').addEventListener('click', submitFinalScore); 
 }
 
 function loadImages() {
@@ -142,33 +165,34 @@ function loadImages() {
     pacmanRightImage.src = "./pacmanRight.jpg";
 }
 
+// Function to initialize/reset the game state
 function startGame(isRestart = false) {
     clearTimeout(gameLoopTimeout);
     
-    // 1. Reset map and create ALL entities
-    loadMap(true); 
+    // 1. Reset positions (entities were loaded in the start-btn handler)
+    resetPositions();
     
     // 2. Reset game variables
-    resetPositions();
-    score = 0;
-    lives = 3;
+    score = isRestart ? score : 0; // Keep score/lives on restart, reset if new game
+    lives = isRestart ? lives : 3; 
     gameOver = false;
-
+    scoreSubmitted = false;
+    gamePausedAfterDeath = false; // Reset death pause
+    
     // 3. Stop siren and play the beginning sound
     sirenSound.pause();
     sirenSound.currentTime = 0;
     beginningSound.currentTime = 0;
     
-    // ⭐ FIX: Play sound *after* the initial draw
     beginningSound.play();
     
-    // 4. Update status displays and redraw immediately (no "Press START" message)
+    // 4. Update status displays
     document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
     document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
     document.getElementById('statusMessage').textContent = 'Ready!';
-    draw(); 
+    document.getElementById('gameOverModal').classList.add('hidden');
     
-    // 5. Start Game Loop after sound
+    // 5. Start Game Loop after beginning sound (approx. 4 seconds)
     const beginningSoundDuration = 4000; 
 
     gameLoopTimeout = setTimeout(() => {
@@ -176,43 +200,54 @@ function startGame(isRestart = false) {
         gameStarted = true;
         document.getElementById('statusMessage').textContent = 'Go!';
         
-        if (isRestart) {
-            update(); 
-        } else {
-            gameLoopTimeout = setTimeout(update, 50); 
+        // 5b. Set initial random direction for ghosts (and initial velocity)
+        for (let ghost of ghosts.values()) {
+            ghost.chooseNewDirection(); // Use the new function to set a valid initial direction/velocity
         }
+
+        // Use recursive call to 'update' loop instead of setting another timeout here
+        update(); 
     }, beginningSoundDuration); 
     
-    // 6. Set initial random direction and zero velocity for ghosts
+    // 6. Set initial zero velocity for ghosts (direction will be set after sound)
     for (let ghost of ghosts.values()) {
         ghost.velocityX = 0; 
         ghost.velocityY = 0;
-        const newDirection = directions[Math.floor(Math.random() * 4)];
-        ghost.direction = newDirection; 
     }
 }
 
+// Resets the entire game state to the "Press START" screen (Black Screen)
 function resetGame() {
+    // 1. Stop the game loop and sounds
     clearTimeout(gameLoopTimeout);
     sirenSound.pause(); 
     sirenSound.currentTime = 0;
     
-    // Clear all entities but reload the walls for the starting screen view
-    loadMap(false, true); 
+    // 2. Clear ALL entities (walls, foods, ghosts, pacman)
+    loadMap(false, false); 
     
+    // 3. Reset game state variables
     score = 0;
     lives = 3;
     gameOver = false;
     gameStarted = false; 
+    scoreSubmitted = false;
+    gamePausedAfterDeath = false;
+    // Set flag to show start message
+    showStartMessage = true; 
 
+    // 4. Reset UI
     document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
     document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
     document.getElementById('statusMessage').textContent = 'Ready!';
+    document.getElementById('gameOverModal').classList.add('hidden'); // Ensure modal is hidden
     
+    // 5. Reset button to "Start" state
     document.getElementById('start-btn').textContent = 'Start';
     document.getElementById('start-btn').classList.remove('bg-red-600');
     document.getElementById('start-btn').classList.add('bg-green-600');
     
+    // 6. Redraw the board to show "Press START to Play!" on a black background
     draw(); 
 }
 
@@ -233,13 +268,13 @@ function loadMap(fullLoad = true, wallsOnly = false) {
             const x = c * tileSize;
             const y = r * tileSize;
 
-            // Load Walls (always loaded if fullLoad is true)
-            if (tileMapChar == 'X') { 
+            // Only load Walls if fullLoad is true OR if wallsOnly is true
+            if (tileMapChar == 'X' && (fullLoad || wallsOnly)) { 
                 const wall = new Block(wallImage, x, y, tileSize, tileSize);
                 walls.add(wall);
             }
             
-            // Only create other entities if fullLoad is true AND wallsOnly is false
+            // Only create other entities (Ghosts, Pacman, Food) if fullLoad is true AND wallsOnly is false
             if (fullLoad && !wallsOnly) {
                 if (tileMapChar == 'b') { 
                     const ghost = new Block(blueGhostImage, x, y, tileSize, tileSize);
@@ -260,8 +295,12 @@ function loadMap(fullLoad = true, wallsOnly = false) {
                 else if (tileMapChar == 'P') { 
                     pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
                 }
-                else if (tileMapChar == ' ') { 
-                    const food = new Block(null, x + 14, y + 14, 4, 4);
+                
+                // Add food if it's an empty space, and not 'O' (skip/no food zone)
+                if (tileMapChar === ' ' || tileMapChar === 'P' || 
+                    ['b', 'o', 'p', 'r'].includes(tileMapChar)) {
+                    // Food added slightly offset to be centered in tile
+                    const food = new Block(null, x + tileSize / 2 - 2, y + tileSize / 2 - 2, 4, 4);
                     foods.add(food);
                 }
             }
@@ -269,45 +308,48 @@ function loadMap(fullLoad = true, wallsOnly = false) {
     }
 }
 
+
 function update() {
     if (gameOver) {
         sirenSound.pause();
         sirenSound.currentTime = 0;
-        document.getElementById('statusMessage').textContent = 'Game Over!';
-        document.getElementById('modalTitle').textContent = 'Game Over';
-        document.getElementById('modalScore').textContent = `Final Score: ${score}`;
-        document.getElementById('gameOverModal').classList.remove('hidden');
         
+        // This is the Game Over Modal display logic (from previous step)
+        if (!scoreSubmitted) {
+            document.getElementById('statusMessage').textContent = 'Game Over!';
+            document.getElementById('modalTitle').textContent = 'Game Over';
+            document.getElementById('modalScore').textContent = `Final Score: ${score}`;
+            document.getElementById('playerNameInput').value = '';
+            document.getElementById('gameOverModal').classList.remove('hidden'); 
+            scoreSubmitted = true;
+        }
+
+        // Ensure START/RESET button reverts its state
         document.getElementById('start-btn').textContent = 'Start';
         document.getElementById('start-btn').classList.remove('bg-red-600');
         document.getElementById('start-btn').classList.add('bg-green-600');
-        
-        const playerName = prompt("Game Over! Enter your name for the leaderboard:", "Player");
-        if (playerName) {
-            sendScore(playerName, score);
-        }
-        return;
-    }
-    
-    // Only continue the loop if the game has started
-    if (!gameStarted) {
         return; 
     }
     
+    // Only continue the loop if the game has started AND is not paused after death
+    if (!gameStarted || gamePausedAfterDeath) { 
+        return; 
+    }
+
     gameLoopTimeout = setTimeout(update, 50); 
     move();
     draw();
 }
 
 function draw() {
-    context.clearRect(0, 0, board.width, board.height);
+    // This clears the canvas to black
+    context.clearRect(0, 0, board.width, board.height); 
     
-    // Draw walls (always draw walls if they exist, even before gameStarted = true)
+    // Draw walls (only drawn if they exist)
     for (let wall of walls.values()) {
         context.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height);
     }
     
-    // ⭐ FIX: Draw game entities ONLY if the map is fully loaded OR game has started
     // Draw food
     context.fillStyle = "white";
     for (let food of foods.values()) {
@@ -328,8 +370,9 @@ function draw() {
     document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
     document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
     
-    // ⭐ FIX: Only show "Press START" message if gameStarted is explicitly false AND foods are not loaded
-    if (!gameStarted && foods.size === 0) {
+    // Initial status text on the board
+    // Text is only shown if the game hasn't started AND the flag is set.
+    if (!gameStarted && showStartMessage) { 
         context.fillStyle = "yellow";
         context.font = "20px Rubik";
         context.textAlign = "center";
@@ -337,8 +380,69 @@ function draw() {
     }
 }
 
+// 🎯 HELPER FUNCTION for Ghost AI 🎯
+function chooseBestChaseDirection(ghost) {
+    if (!pacman) return null;
+
+    const ghostCenterX = ghost.x + ghost.width / 2;
+    const ghostCenterY = ghost.y + ghost.height / 2;
+    const pacmanCenterX = pacman.x + pacman.width / 2;
+    const pacmanCenterY = pacman.y + pacman.height / 2;
+
+    let bestDirection = ghost.direction;
+    let minDistance = Infinity;
+    
+    const possibleDirections = ['U', 'D', 'L', 'R'];
+    const speed = tileSize / 4; 
+
+    for (const direction of possibleDirections) {
+        // Prevent immediate reversal (e.g., Ghost going L should avoid R)
+        if (
+            (direction === 'U' && ghost.direction === 'D') ||
+            (direction === 'D' && ghost.direction === 'U') ||
+            (direction === 'L' && ghost.direction === 'R') ||
+            (direction === 'R' && ghost.direction === 'L')
+        ) {
+            continue;
+        }
+
+        let tempX = ghost.x;
+        let tempY = ghost.y;
+
+        if (direction === 'U') tempY -= speed;
+        else if (direction === 'D') tempY += speed;
+        else if (direction === 'L') tempX -= speed;
+        else if (direction === 'R') tempX += speed;
+
+        // Create a temporary block for collision check
+        const tempBlock = { x: tempX, y: tempY, width: ghost.width, height: ghost.height };
+        let collidesWithWall = false;
+
+        for (let wall of walls.values()) {
+            if (collision(tempBlock, wall)) {
+                collidesWithWall = true;
+                break;
+            }
+        }
+        
+        // Skip this direction if it leads to a collision
+        if (collidesWithWall) continue;
+        
+        // Calculate Manhattan distance to Pacman (distance = |dx| + |dy|)
+        const newDist = Math.abs(tempX - pacman.x) + Math.abs(tempY - pacman.y);
+
+        if (newDist < minDistance) {
+            minDistance = newDist;
+            bestDirection = direction;
+        }
+    }
+
+    return bestDirection;
+}
+
+
 function move() {
-    if (!gameStarted || !pacman) return; 
+    if (!gameStarted || !pacman || gamePausedAfterDeath) return; 
     
     // 1. APPLY CURRENT VELOCITY (Pacman Movement)
     pacman.x += pacman.velocityX;
@@ -366,29 +470,34 @@ function move() {
     for (let ghost of ghosts.values()) {
         // Trigger velocity once the game starts
         if (ghost.velocityX === 0 && ghost.velocityY === 0) {
-            ghost.updateVelocity(); 
+            // Note: velocity is set in startGame/resetPositions. This is a redundant check now.
         }
         
         // Ghost-Pacman Collision Check
-        if (collision(ghost, pacman) && !gamePausedAfterDeath) { 
-            clearTimeout(gameLoopTimeout); 
-            lives -= 1;
-            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
-            
-            if (lives == 0) {
+        if (collision(ghost, pacman)) { 
+            clearTimeout(gameLoopTimeout); // Stop game loop immediately
+
+            // Game Over
+            if (lives <= 1) {
                 deathSound.play();
+                lives = 0;
+                document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
                 gameOver = true;
                 gameStarted = false; 
-                gameLoopTimeout = setTimeout(update, 50); 
+                gameLoopTimeout = setTimeout(update, 50); // Re-start loop once to trigger Game Over modal
                 return;
             }
             
-            // PAUSE AND DEATH MESSAGE LOGIC
+            // Player Death (Loss of 1 life)
+            lives -= 1;
+            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+
+            // PAUSE AND DEATH LOGIC
             gamePausedAfterDeath = true;
             sirenSound.pause(); 
             deathSound.play(); 
             
-            document.getElementById('statusMessage').textContent = 'Ready!'; // Show Ready/Pause message
+            document.getElementById('statusMessage').textContent = 'Ready!'; 
             draw(); 
             
             // Pause for 2 seconds 
@@ -400,30 +509,87 @@ function move() {
                 sirenSound.currentTime = 0;
                 sirenSound.play(); 
                 
-                gameLoopTimeout = setTimeout(update, 50);
+                gameLoopTimeout = setTimeout(update, 50); // Resume the game loop
             }, 2000); 
 
             return; 
         }
 
-        // Ghost Movement Logic (simple house exit logic)
-        if (ghost.y == tileSize * 9 && ghost.direction != 'U' && ghost.direction != 'D' && ghost.velocityX == 0) {
-            ghost.updateDirection('U');
+        // --- START NEW GHOST MOVEMENT LOGIC (Copied from first code block's `move` function) ---
+        
+        // Trigger velocity once the game starts
+        if (ghost.velocityX === 0 && ghost.velocityY === 0) {
+            ghost.updateVelocity(); 
         }
+
+        // Ghost Movement Logic (house exit)
+        const currentTileCol = Math.round(ghost.x / tileSize);
+        const currentTileRow = Math.round(ghost.y / tileSize);
+
+        if (currentTileRow === 9 && (currentTileCol === 8 || currentTileCol === 9 || currentTileCol === 10)) {
+            if (ghost.canMoveInDirection('U')) {
+                ghost.direction = 'U';
+                ghost.updateVelocity();
+            }
+        }
+
 
         ghost.x += ghost.velocityX;
         ghost.y += ghost.velocityY;
         
         // Ghost collision with wall logic
         for (let wall of walls.values()) {
-            if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
+            if (collision(ghost, wall) || ghost.x < 0 || ghost.x + ghost.width > boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
+                
+                // 1. Rollback position
                 ghost.x -= ghost.velocityX;
                 ghost.y -= ghost.velocityY;
                 
-                const newDirection = directions[Math.floor(Math.random() * 4)];
-                ghost.updateDirection(newDirection);
+                // 2. Stop movement
+                ghost.velocityX = 0;
+                ghost.velocityY = 0;
+                
+                // 3. Choose a valid, non-colliding direction
+                ghost.chooseNewDirection();
+                break;
             }
         }
+        
+        // 4. SMART PATHING (Preventing looping in straightaways and encouraging exploration)
+        if (Math.abs(ghost.x % tileSize) < tileSize / 2 && Math.abs(ghost.y % tileSize) < tileSize / 2) { 
+            let possibleTurns = [];
+            if (ghost.direction === 'U' || ghost.direction === 'D') { 
+                if (ghost.canMoveInDirection('L')) possibleTurns.push('L');
+                if (ghost.canMoveInDirection('R')) possibleTurns.push('R');
+            } else { 
+                if (ghost.canMoveInDirection('U')) possibleTurns.push('U');
+                if (ghost.canMoveInDirection('D')) possibleTurns.push('D');
+            }
+
+            if (ghost.canMoveInDirection(ghost.direction)) {
+                possibleTurns.push(ghost.direction);
+            }
+            
+            let nonReversalTurns = possibleTurns.filter(dir => dir !== ghost.getOppositeDirection());
+            if (nonReversalTurns.length === 0) {
+                nonReversalTurns = possibleTurns;
+            }
+
+            if (nonReversalTurns.length > 0) {
+                nonReversalTurns.sort(() => Math.random() - 0.5);
+                ghost.direction = nonReversalTurns[0];
+                ghost.updateVelocity();
+            } else {
+                if (ghost.canMoveInDirection(ghost.getOppositeDirection())) {
+                    ghost.direction = ghost.getOppositeDirection();
+                    ghost.updateVelocity();
+                } else {
+                    ghost.velocityX = 0;
+                    ghost.velocityY = 0;
+                }
+            }
+        }
+        // --- END NEW GHOST MOVEMENT LOGIC ---
     }
 
     // 4. Check Food Collision
@@ -449,15 +615,15 @@ function move() {
         sirenSound.currentTime = 0;
         document.getElementById('statusMessage').textContent = 'Level Clear!';
         setTimeout(() => {
-            loadMap(true); 
+            loadMap(true, false); 
             resetPositions();
-            startGame(true); 
+            startGame(true); // Restart logic without resetting score/lives
         }, 1000); 
     }
 }
 
 function handleInput(e) {
-    if (!gameStarted || gameOver || !pacman) {
+    if (!gameStarted || gameOver || !pacman || gamePausedAfterDeath) {
         return; 
     }
 
@@ -509,14 +675,27 @@ function resetPositions() {
         ghost.reset();
         ghost.velocityX = 0;
         ghost.velocityY = 0;
-        const newDirection = directions[Math.floor(Math.random() * 4)];
-        ghost.direction = newDirection; 
+        // Use new ghost direction logic
+        ghost.chooseNewDirection(); 
     }
 }
 
 // ===================================
-// LEADERBOARD FUNCTIONS (unchanged)
+// LEADERBOARD FUNCTIONS
 // ===================================
+
+function submitFinalScore() {
+    const playerName = document.getElementById('playerNameInput').value.trim();
+    const finalScore = score; 
+
+    if (!playerName || playerName.length < 2) {
+        alert("Please enter a name with at least 2 characters.");
+        return;
+    }
+    
+    document.getElementById('gameOverModal').classList.add('hidden'); 
+    sendScore(playerName, finalScore); 
+}
 
 function sendScore(playerName, finalScore) {
     if (finalScore <= 0) return; 
@@ -578,7 +757,7 @@ function displayLeaderboard(leaderboardData) {
 
 
 // ===================================
-// BLOCK CLASS (unchanged)
+// BLOCK CLASS (with imported ghost logic)
 // ===================================
 
 class Block {
@@ -647,6 +826,100 @@ class Block {
         } else {
             // Path is clear!
         }
+    }
+
+    // ⭐ IMPORTED GHOST LOGIC METHOD 1: Random, non-colliding direction chooser
+    chooseNewDirection() {
+        const currentDirection = this.direction;
+        const oppositeDirection = this.getOppositeDirection();
+        
+        // Prioritize turning off the current axis if possible
+        let potentialDirections = directions.filter(dir => 
+            (currentDirection === 'U' || currentDirection === 'D') ? (dir === 'L' || dir === 'R') : (dir === 'U' || dir === 'D')
+        );
+        
+        // Add current direction as a possibility
+        potentialDirections.push(currentDirection);
+
+        // Add the opposite direction as a last resort, but only once
+        if (!potentialDirections.includes(oppositeDirection)) {
+            potentialDirections.push(oppositeDirection);
+        }
+
+        // Shuffle for randomness
+        potentialDirections.sort(() => Math.random() - 0.5);
+
+        let newDirection = null;
+
+        // Try to find a valid direction
+        for (const dir of potentialDirections) {
+            if (this.canMoveInDirection(dir)) {
+                newDirection = dir;
+                break; 
+            }
+        }
+        
+        if (newDirection) {
+             this.direction = newDirection;
+             this.updateVelocity();
+        } else {
+            // If still stuck, try reversing as the only option
+            if (this.canMoveInDirection(oppositeDirection)) {
+                this.direction = oppositeDirection;
+                this.updateVelocity();
+            } else {
+                // If completely stuck, stop movement
+                this.velocityX = 0;
+                this.velocityY = 0;
+            }
+        }
+    }
+    
+    // ⭐ IMPORTED GHOST LOGIC METHOD 2: Get opposite direction
+    getOppositeDirection() {
+        if (this.direction === 'U') return 'D';
+        if (this.direction === 'D') return 'U';
+        if (this.direction === 'L') return 'R';
+        if (this.direction === 'R') return 'L';
+        return null; 
+    }
+    
+    // ⭐ IMPORTED GHOST LOGIC METHOD 3: Check if a direction is valid/non-colliding
+    canMoveInDirection(testDirection) {
+        const originalX = this.x;
+        const originalY = this.y;
+        const originalDir = this.direction;
+        
+        // Temporarily set new direction and velocity
+        this.direction = testDirection;
+        this.updateVelocity(); 
+        
+        const testX = originalX + this.velocityX;
+        const testY = originalY + this.velocityY;
+
+        let collisionDetected = false;
+
+        // Check against board boundaries
+        if (testX < 0 || testX + this.width > boardWidth || testY < 0 || testY + this.height > boardHeight) {
+            collisionDetected = true;
+        } else {
+            // Create a temporary object for collision checking
+            const tempBlock = { x: testX, y: testY, width: this.width, height: this.height };
+            
+            // Check against walls
+            for (let wall of walls.values()) {
+                if (collision(tempBlock, wall)) {
+                    collisionDetected = true;
+                    break;
+                }
+            }
+        }
+
+        // Restore original state and velocity
+        this.direction = originalDir;
+        this.updateVelocity(); // Recalculate velocity based on restored direction
+
+        return !collisionDetected;
     }
 
     updateDirection(direction) {

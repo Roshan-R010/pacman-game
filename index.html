@@ -10,96 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="pacman.js"></script>
-    <link rel="stylesheet" type="text/css" href="pacman.css"> 
+    <link rel="stylesheet" href="pacman.css">
     
-    <style>
-        body {
-            font-family: 'Rubik', sans-serif;
-            background-color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        #board {
-            background-color: black;
-            border: 4px solid #0000ff;
-            display: block;
-        }
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            background-color: #222;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            max-width: 650px;
-        }
-        .controls {
-            margin-top: 20px;
-        }
-        .d-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-gap: 5px;
-            width: 150px;
-            margin: 0 auto;
-        }
-        .d-pad-button {
-            background-color: #555;
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 18px;
-            transition: background-color 0.2s;
-        }
-        .d-pad-button:active {
-            background-color: #777;
-        }
-        .keyboard-instructions {
-            color: #ccc;
-            font-size: 0.8rem;
-            margin-top: 10px;
-        }
-        
-        /* Leaderboard Modal Styles */
-        #leaderboardContainer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        .leaderboard-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-            color: black;
-        }
-        #leaderboardTable {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-        #leaderboardTable th, #leaderboardTable td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-    </style>
 </head>
 <body>
     <div class="game-container">
@@ -147,21 +59,33 @@
                         </tbody>
                 </table>
             </div>
-            </div>
-    </div>
-
-    <div id="gameOverModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
-            <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-red-600">Game Over</h3>
-            <p id="modalScore" class="mb-4 text-gray-700">Final Score: 0</p>
-            
-            <div id="nameInputContainer" class="flex flex-col items-center mb-4">
-                <p class="text-red-500 mb-2 font-bold">Enter your initials for the leaderboard:</p>
-                <input type="text" id="playerNameInput" placeholder="Enter initials (max 3)" maxlength="3" class="p-2 border rounded text-black text-sm w-full max-w-xs mb-3"/>
-                <button id="submitScoreBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">Submit Score</button>
-            </div>
-            <button id="restartGameBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">Play Again</button>
         </div>
     </div>
-</body>
+
+    <div id="gameOverModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-2xl max-w-sm w-full text-center">
+        <h2 id="modalTitle" class="text-3xl font-bold mb-4 text-red-600">Game Over</h2>
+        <p id="modalScore" class="text-xl mb-4 text-gray-800">Final Score: 0</p>
+        
+        <div id="scoreInputArea">
+            <p class="mb-2 text-sm text-gray-600">Enter your name to submit your score!</p>
+            <input type="text" id="playerNameInput" placeholder="Player Name" maxlength="15"
+                    class="w-full p-2 border border-gray-300 rounded-md mb-3 text-black text-center">
+            <button id="submitScoreBtn" 
+                     class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150">
+                Submit Score
+            </button>
+        </div>
+        
+        <button id="restartGameBtn"
+                    class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-150">
+            Play Again
+        </button>
+        <button id="exitToMenuBtn"
+                    class="mt-2 w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition duration-150">
+            Exit to Main Menu
+        </button>
+    </div>
+</div>
+    </body>
 </html>

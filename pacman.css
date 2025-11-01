@@ -34,15 +34,15 @@
 
             align-items: center;
 
-            background-color: #070a28;
+            background-color: #c4b153;
 
-            border: 5px solid #34428f; /* Red border for play area */
+            border: 5px solid #a18915; /* Red border for play area */
 
             border-radius: 10px;
 
             padding: 10px;
 
-            box-shadow: 0 0 30px rgba(0, 34, 255, 0.5);
+            box-shadow: 0 0 30px rgb(161 137 21);
 
             position: relative;
 
@@ -72,7 +72,7 @@
 
         #showLeaderboardBtn {
 
-            background-color: #16a34a;
+            background-color: #923535;
 
             color: white;
 
@@ -148,7 +148,7 @@
 
             height: 45px;
 
-            background-color: #0000ff; /* Blue color */
+            background-color: #923535; /* Blue color */
 
             border: none;
 
