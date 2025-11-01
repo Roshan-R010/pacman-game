@@ -21,23 +21,23 @@ let wallImage;
 //Ghosts: b = blue, o = orange, p = pink, r = red
 const tileMap = [
     "XXXXXXXXXXXXXXXXXXX",
-    "X         X         X",
+    "X                 X",
     "X XX XXX X XXX XX X",
     "X                 X",
     "X XX X XXXXX X XX X",
-    "X    X       X    X",
+    "X  X         X   X",
     "XXXX XXXX XXXX XXXX",
     "OOOX X       X XOOO",
     "XXXX X XXrXX X XXXX",
-    "O      bpo       O",
+    "O    bpo         O",
     "XXXX X XXXXX X XXXX",
     "OOOX X       X XOOO",
     "XXXX X XXXXX X XXXX",
-    "X         X         X",
+    "X          X       X",
     "X XX XXX X XXX XX X",
-    "X X    P      X  X",
+    "X X    P       X X",
     "XX X X XXXXX X X XX",
-    "X    X   X   X    X",
+    "X  X   X X   X   X",
     "X XXXXXX X XXXXXX X",
     "X                 X",
     "XXXXXXXXXXXXXXXXXXX"
@@ -46,12 +46,14 @@ const tileMap = [
 const walls = new Set();
 const foods = new Set();
 const ghosts = new Set();
-let pacman;
+let pacman = null; 
 
 const directions = ['U', 'D', 'L', 'R']; //up down left right
 let score = 0;
 let lives = 3;
 let gameOver = false;
+let gameStarted = false; // Initial game state
+let gameLoopTimeout; // Define the game loop variable globally
 
 window.onload = function() {
     board = document.getElementById("board");
@@ -60,25 +62,19 @@ window.onload = function() {
     context = board.getContext("2d"); //used for drawing on the board
 
     loadImages();
-    loadMap();
     
-    // Set initial random direction for ghosts
-    for (let ghost of ghosts.values()) {
-        const newDirection = directions[Math.floor(Math.random() * 4)];
-        ghost.updateDirection(newDirection);
-    }
-    
-    update();
+    // Load map only for WALLS if gameStarted is false (i.e., when loading the page or resetting)
+    loadMap(false); 
+    draw(); 
     
     // Keyboard controls
     document.addEventListener("keyup", handleInput);
 
-    // ✅ On-screen D-pad controls (FIXED: Using touchend/click with preventDefault)
+    // On-screen D-pad controls
     document.getElementById('up-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowUp'}); });
     document.getElementById('down-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowDown'}); });
     document.getElementById('left-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowLeft'}); });
     document.getElementById('right-btn').addEventListener('click', (e) => { e.preventDefault(); handleInput({code: 'ArrowRight'}); });
-    // Also attach touchstart listeners to improve mobile feel
     document.getElementById('up-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput({code: 'ArrowUp'}); });
     document.getElementById('down-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput({code: 'ArrowDown'}); });
     document.getElementById('left-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput({code: 'ArrowLeft'}); });
@@ -91,6 +87,27 @@ window.onload = function() {
     
     document.getElementById('closeLeaderboardBtn').addEventListener('click', () => {
         document.getElementById('leaderboardContainer').style.display = 'none';
+    });
+
+    // START/RESET BUTTON LOGIC 
+    document.getElementById('start-btn').addEventListener('click', () => {
+        if (!gameStarted) {
+            // Start the game
+            startGame();
+            document.getElementById('start-btn').textContent = 'Reset'; 
+            document.getElementById('start-btn').classList.remove('bg-green-600');
+            document.getElementById('start-btn').classList.add('bg-red-600');
+            document.getElementById('statusMessage').textContent = 'Go!';
+        } else {
+            // Reset the game if it is currently running
+            resetGame();
+        }
+    });
+    
+    // Restart button event listener
+    document.getElementById('restartGameBtn').addEventListener('click', () => {
+        document.getElementById('gameOverModal').classList.add('hidden');
+        startGame(true); 
     });
 }
 
@@ -117,10 +134,74 @@ function loadImages() {
     pacmanRightImage.src = "./pacmanRight.jpg";
 }
 
-function loadMap() {
+// Function to initialize/reset the game state
+function startGame(isRestart = false) {
+    // 1. Reset map and create ALL entities (passing true for full load)
+    loadMap(true); 
+    
+    // 2. Reset game variables
+    resetPositions();
+    score = 0;
+    lives = 3;
+    gameOver = false;
+    gameStarted = true;
+    
+    // 3. Set initial random direction and zero velocity for ghosts
+    for (let ghost of ghosts.values()) {
+        ghost.velocityX = 0; 
+        ghost.velocityY = 0;
+        const newDirection = directions[Math.floor(Math.random() * 4)];
+        ghost.direction = newDirection; 
+    }
+    
+    // 4. Update status displays
+    document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+    document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+    document.getElementById('statusMessage').textContent = 'Go!';
+
+    // 5. Start the game loop
+    if (isRestart) {
+        update();
+    } else {
+        gameLoopTimeout = setTimeout(update, 50);
+    }
+}
+
+// Resets the entire game state to the "Press START" screen
+function resetGame() {
+    // 1. Stop the game loop
+    clearTimeout(gameLoopTimeout);
+    
+    // 2. Clear entities (passing false for walls-only load, which now creates NO entities)
+    loadMap(false); 
+    
+    // 3. Reset game state variables
+    score = 0;
+    lives = 3;
+    gameOver = false;
+    gameStarted = false; 
+
+    // 4. Reset UI
+    document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+    document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+    document.getElementById('statusMessage').textContent = 'Ready!';
+    
+    // 5. Reset button to "Start" state
+    document.getElementById('start-btn').textContent = 'Start';
+    document.getElementById('start-btn').classList.remove('bg-red-600');
+    document.getElementById('start-btn').classList.add('bg-green-600');
+    
+    // 6. Redraw the board with only black background and "Press START" message
+    draw(); 
+}
+
+// fullLoad: true means create Walls, Pacman, Ghosts, Food. false means clear all entities.
+function loadMap(fullLoad = true) {
     walls.clear();
     foods.clear();
     ghosts.clear();
+    
+    pacman = null; 
 
     for (let r = 0; r < rowCount; r++) {
         for (let c = 0; c < columnCount; c++) {
@@ -130,88 +211,118 @@ function loadMap() {
             const x = c * tileSize;
             const y = r * tileSize;
 
-            if (tileMapChar == 'X') { //block wall
+            // ⭐️ FIX: Only create walls if fullLoad is true
+            if (fullLoad && tileMapChar == 'X') { //block wall
                 const wall = new Block(wallImage, x, y, tileSize, tileSize);
                 walls.add(wall);
             }
-            else if (tileMapChar == 'b') { //blue ghost
-                const ghost = new Block(blueGhostImage, x, y, tileSize, tileSize);
-                ghosts.add(ghost);
-            }
-            else if (tileMapChar == 'o') { //orange ghost
-                const ghost = new Block(orangeGhostImage, x, y, tileSize, tileSize);
-                ghosts.add(ghost);
-            }
-            else if (tileMapChar == 'p') { //pink ghost
-                const ghost = new Block(pinkGhostImage, x, y, tileSize, tileSize);
-                ghosts.add(ghost);
-            }
-            else if (tileMapChar == 'r') { //red ghost
-                const ghost = new Block(redGhostImage, x, y, tileSize, tileSize);
-                ghosts.add(ghost);
-            }
-            else if (tileMapChar == 'P') { //pacman
-                pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
-            }
-            else if (tileMapChar == ' ') { //empty is food
-                const food = new Block(null, x + 14, y + 14, 4, 4);
-                foods.add(food);
+            
+            // Only create other entities if fullLoad is true
+            if (fullLoad) {
+                if (tileMapChar == 'b') { //blue ghost
+                    const ghost = new Block(blueGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'o') { //orange ghost
+                    const ghost = new Block(orangeGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'p') { //pink ghost
+                    const ghost = new Block(pinkGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'r') { //red ghost
+                    const ghost = new Block(redGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'P') { //pacman
+                    pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
+                }
+                else if (tileMapChar == ' ') { //empty is food (pellets)
+                    const food = new Block(null, x + 14, y + 14, 4, 4);
+                    foods.add(food);
+                }
             }
         }
     }
 }
 
 function update() {
+    if (!gameStarted) {
+        draw(); 
+        return; 
+    }
+    
     if (gameOver) {
+        document.getElementById('statusMessage').textContent = 'Game Over!';
+        document.getElementById('modalTitle').textContent = 'Game Over';
+        document.getElementById('modalScore').textContent = `Final Score: ${score}`;
+        document.getElementById('gameOverModal').classList.remove('hidden');
+        
+        // Ensure button reverts to Start state on game over
+        document.getElementById('start-btn').textContent = 'Start';
+        document.getElementById('start-btn').classList.remove('bg-red-600');
+        document.getElementById('start-btn').classList.add('bg-green-600');
+        
+        const playerName = prompt("Game Over! Enter your name for the leaderboard:", "Player");
+        if (playerName) {
+            sendScore(playerName, score);
+        }
         return;
     }
+    gameLoopTimeout = setTimeout(update, 50); 
     move();
     draw();
-    setTimeout(update, 50); //1000/50 = 20 FPS
 }
 
 function draw() {
     context.clearRect(0, 0, board.width, board.height);
     
-    // Draw walls
-    for (let wall of walls.values()) {
-        context.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height);
-    }
-    
-    // Draw food (must be after clearRect)
-    context.fillStyle = "white";
-    for (let food of foods.values()) {
-        context.fillRect(food.x, food.y, food.width, food.height);
-    }
+    // ⭐️ FIX: Only draw walls if the game has started (or if walls exist, which now only happens on start)
+    if (gameStarted) {
+        // Draw walls
+        for (let wall of walls.values()) {
+            context.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height);
+        }
 
-    // Draw Pacman
-    context.drawImage(pacman.image, pacman.x, pacman.y, pacman.width, pacman.height);
-    
-    // Draw Ghosts
-    for (let ghost of ghosts.values()) {
-        context.drawImage(ghost.image, ghost.x, ghost.y, ghost.width, ghost.height);
+        // Draw food
+        context.fillStyle = "white";
+        for (let food of foods.values()) {
+            context.fillRect(food.x, food.y, food.width, food.height);
+        }
+
+        // Draw Pacman
+        if (pacman) {
+            context.drawImage(pacman.image, pacman.x, pacman.y, pacman.width, pacman.height);
+        }
+        
+        // Draw Ghosts
+        for (let ghost of ghosts.values()) {
+            context.drawImage(ghost.image, ghost.x, ghost.y, ghost.width, ghost.height);
+        }
     }
     
-    // Score and Lives
-    context.fillStyle = "white";
-    context.font = "14px sans-serif";
-    if (gameOver) {
-        context.fillText("Game Over: " + String(score), tileSize / 2, tileSize / 2);
-    }
-    else {
-        context.fillText("x" + String(lives) + " " + String(score), tileSize / 2, tileSize / 2);
+    // Update Score and Lives on the HTML elements
+    document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+    document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+    
+    // Initial status text on the board
+    if (!gameStarted) {
+         context.fillStyle = "yellow";
+         context.font = "20px Rubik";
+         context.textAlign = "center";
+         context.fillText("Press START to Play!", boardWidth / 2, boardHeight / 2);
     }
 }
 
 function move() {
+    if (!gameStarted || !pacman) return; 
     
-    // 1. APPLY CURRENT VELOCITY (Movement)
-
+    // 1. APPLY CURRENT VELOCITY (Pacman Movement)
     pacman.x += pacman.velocityX;
     pacman.y += pacman.velocityY;
 
-    // 2. CHECK WALL COLLISION (Stop if running into a wall or map boundary)
-    // Map boundary check: Ensure Pacman stays within the defined tileMap area
+    // 2. CHECK WALL COLLISION (Pacman)
     if (pacman.x < 0 || pacman.x + pacman.width > boardWidth || pacman.y < 0 || pacman.y + pacman.height > boardHeight) {
         pacman.x -= pacman.velocityX;
         pacman.y -= pacman.velocityY;
@@ -219,41 +330,38 @@ function move() {
         pacman.velocityY = 0;
     }
 
-    // Wall collision check
     for (let wall of walls.values()) {
         if (collision(pacman, wall)) {
             pacman.x -= pacman.velocityX;
             pacman.y -= pacman.velocityY;
-            // Stop Pacman movement completely if blocked
             pacman.velocityX = 0;
             pacman.velocityY = 0;
             break;
         }
     }
 
-    // --- REST OF THE LOGIC REMAINS THE SAME ---
-
-    //check ghosts collision
+    // 3. Ghost Movement and Collision
     for (let ghost of ghosts.values()) {
+        // Trigger velocity once the game starts
+        if (ghost.velocityX === 0 && ghost.velocityY === 0) {
+            ghost.updateVelocity(); 
+        }
+        
         if (collision(ghost, pacman)) {
             lives -= 1;
+            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+            
             if (lives == 0) {
                 gameOver = true;
-                
-                // Prompt for name and submit score on Game Over
-                const playerName = prompt("Game Over! Enter your name for the leaderboard:", "Player");
-                if (playerName) {
-                    sendScore(playerName, score);
-                }
-                
-                return;
+                gameStarted = false; 
+                clearTimeout(gameLoopTimeout); 
+                return; 
             }
             resetPositions();
         }
 
-        // Ghost Movement Logic
-        // Simple logic to escape the ghost house initially (row 9 = 9*32 = 288)
-        if (ghost.y == tileSize * 9 && ghost.direction != 'U' && ghost.direction != 'D') {
+        // Ghost Movement Logic (simple house exit logic)
+        if (ghost.y == tileSize * 9 && ghost.direction != 'U' && ghost.direction != 'D' && ghost.velocityX == 0) {
             ghost.updateDirection('U');
         }
 
@@ -262,7 +370,7 @@ function move() {
         
         // Ghost collision with wall logic
         for (let wall of walls.values()) {
-            if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth) {
+            if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
                 ghost.x -= ghost.velocityX;
                 ghost.y -= ghost.velocityY;
                 
@@ -273,12 +381,13 @@ function move() {
         }
     }
 
-    //check food collision
+    // 4. Check Food Collision
     let foodEaten = null;
     for (let food of foods.values()) {
         if (collision(pacman, food)) {
             foodEaten = food;
             score += 10;
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
             break;
         }
     }
@@ -286,23 +395,28 @@ function move() {
         foods.delete(foodEaten);
     }
 
-    //next level
+    // 5. Next Level
     if (foods.size == 0) {
-        loadMap();
-        resetPositions();
+        gameStarted = false;
+        document.getElementById('statusMessage').textContent = 'Level Clear!';
+        setTimeout(() => {
+            loadMap(true); // Full load for next level
+            resetPositions();
+            gameStarted = true;
+            document.getElementById('statusMessage').textContent = 'Go!';
+            
+            // Set initial velocity for ghosts on new level start
+            for (let ghost of ghosts.values()) {
+                ghost.updateVelocity();
+            }
+        }, 1000); // 1 second pause
     }
 }
 
 // Unified input handler for both keyboard and on-screen buttons
 function handleInput(e) {
-    if (gameOver) {
-        loadMap();
-        resetPositions();
-        lives = 3;
-        score = 0;
-        gameOver = false;
-        update(); //restart game loop
-        return;
+    if (!gameStarted || gameOver || !pacman) {
+        return; 
     }
 
     let newDirection = pacman.direction;
@@ -320,10 +434,10 @@ function handleInput(e) {
         newDirection = 'R';
     }
 
-    // Attempt to execute the new direction immediately with grid centering and collision check
+    // Attempt to execute the new direction
     pacman.attemptDirectionChange(newDirection);
     
-    // Update pacman images based on the successfully set direction
+    // Update pacman images
     if (pacman.direction == 'U') {
         pacman.image = pacmanUpImage;
     }
@@ -339,31 +453,34 @@ function handleInput(e) {
 }
 
 function collision(a, b) {
-    return a.x < b.x + b.width &&    //a's top left corner doesn't reach b's top right corner
-        a.x + a.width > b.x &&      //a's top right corner passes b's top left corner
-        a.y < b.y + b.height &&     //a's top left corner doesn't reach b's bottom left corner
-        a.y + a.height > b.y;       //a's bottom left corner passes b's top left corner
+    return a.x < b.x + b.width &&    
+        a.x + a.width > b.x &&      
+        a.y < b.y + b.height &&     
+        a.y + a.height > b.y;        
 }
 
 function resetPositions() {
-    pacman.reset();
-    pacman.velocityX = 0;
-    pacman.velocityY = 0;
+    if (pacman) {
+        pacman.reset();
+        pacman.velocityX = 0;
+        pacman.velocityY = 0;
+    }
     for (let ghost of ghosts.values()) {
         ghost.reset();
+        ghost.velocityX = 0;
+        ghost.velocityY = 0;
         const newDirection = directions[Math.floor(Math.random() * 4)];
-        ghost.updateDirection(newDirection);
+        ghost.direction = newDirection; 
     }
 }
 
 // ===================================
-// LEADERBOARD FUNCTIONS
+// LEADERBOARD FUNCTIONS (unchanged for core game logic)
 // ===================================
 
 function sendScore(playerName, finalScore) {
-    if (finalScore <= 0) return; // Only submit positive scores
+    if (finalScore <= 0) return; 
 
-    // Uses relative path, assuming submit_score.php is in the same directory
     fetch('submit_score.php', {
         method: 'POST',
         headers: {
@@ -388,7 +505,6 @@ function sendScore(playerName, finalScore) {
 }
 
 function fetchLeaderboard() {
-    // Uses relative path, assuming get_leaderboard.php is in the same directory
     fetch('get_leaderboard.php')
     .then(response => response.json())
     .then(data => {
@@ -407,7 +523,7 @@ function fetchLeaderboard() {
 
 function displayLeaderboard(leaderboardData) {
     const tableBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
-    tableBody.innerHTML = ''; // Clear previous entries
+    tableBody.innerHTML = ''; 
 
     leaderboardData.forEach((entry, index) => {
         const row = tableBody.insertRow();
@@ -420,8 +536,9 @@ function displayLeaderboard(leaderboardData) {
     document.getElementById('leaderboardContainer').style.display = 'block';
 }
 
+
 // ===================================
-// BLOCK CLASS
+// BLOCK CLASS (unchanged)
 // ===================================
 
 class Block {
@@ -442,36 +559,36 @@ class Block {
     
     // NEW METHOD for instant, precise movement
     attemptDirectionChange(newDirection) {
+        if (this.velocityX === 0 && this.velocityY === 0) {
+             this.direction = newDirection;
+             this.updateVelocity();
+             return;
+        }
+
         const originalDirection = this.direction;
         const originalX = this.x;
         const originalY = this.y;
         
-        // 1. Calculate the nearest perfect grid cell corner (top-left)
-        // We use Math.round to snap to the closest grid line
         const col = Math.round(this.x / tileSize);
         const row = Math.round(this.y / tileSize);
         
         const snapX = col * tileSize;
         const snapY = row * tileSize;
 
-        // 2. Temporarily snap to the grid and apply the new direction
         this.x = snapX;
         this.y = snapY;
 
         this.direction = newDirection;
         this.updateVelocity();
 
-        // 3. Test for collision in the new direction
         this.x += this.velocityX;
         this.y += this.velocityY;
 
         let collisionDetected = false;
         
-        // Check map boundaries first (This prevents Pacman from moving off the map edges)
         if (this.x < 0 || this.x + this.width > boardWidth || this.y < 0 || this.y + this.height > boardHeight) {
             collisionDetected = true;
         } else {
-            // Then check wall collision
             for (let wall of walls.values()) {
                 if (collision(this, wall)) {
                     collisionDetected = true;
@@ -480,24 +597,16 @@ class Block {
             }
         }
 
-        // 4. Restore or finalize the state
-        this.x -= this.velocityX; // Reset back to the snapped grid position
+        this.x -= this.velocityX; 
         this.y -= this.velocityY;
         
         if (collisionDetected) {
-            // If blocked, revert to original state
             this.direction = originalDirection;
             this.updateVelocity();
             this.x = originalX;
             this.y = originalY; 
-            
-            // Stop movement instantly if the path is blocked
-            this.velocityX = 0;
-            this.velocityY = 0;
-
         } else {
-            // Path is clear! Keep the new direction and the snapped position.
-            // The new velocity is now active and will be used in the next move() loop.
+            // Path is clear!
         }
     }
 
@@ -506,12 +615,10 @@ class Block {
         this.direction = direction;
         this.updateVelocity();
 
-        // Ghost Movement Logic (Pacman bypasses this logic as it uses attemptDirectionChange)
         if (this === pacman) {
             return;
         }
         
-        // Ghost checks wall immediately
         this.x += this.velocityX;
         this.y += this.velocityY;
 
@@ -519,7 +626,7 @@ class Block {
             if (collision(this, wall) || this.x < 0 || this.x + this.width > boardWidth || this.y < 0 || this.y + this.height > boardHeight) {
                 this.x -= this.velocityX;
                 this.y -= this.velocityY;
-                this.direction = prevDirection;
+                this.direction = prevDirection; 
                 this.updateVelocity();
                 return;
             }
@@ -527,7 +634,6 @@ class Block {
     }
 
     updateVelocity() {
-        // Pacman Speed: tileSize/4 = 32/4 = 8 pixels per update (20 FPS)
         const speed = tileSize / 4; 
         if (this.direction == 'U') {
             this.velocityX = 0;
@@ -550,6 +656,6 @@ class Block {
     reset() {
         this.x = this.startX;
         this.y = this.startY;
-        this.direction = 'R'; // Default direction
+        this.direction = 'R'; 
     }
 };

@@ -4,24 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Pac-Man Game</title>
-    <!-- Use Tailwind for base structure and fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Your external pacman.jss file - ADDED HERE -->
-    <script src="pacman.js"></script> 
-    
-    <style src="pacman.css">
-       
-    </style>
+    <script src="pacman.js"></script>
+    <link rel="stylesheet" type="text/css" href="pacman.css">
 </head>
 <body>
     <div class="game-container">
         <button id="showLeaderboardBtn">🏆 Leaderboard</button>
 
-        <!-- Display Game Status -->
         <div class="flex justify-between w-full p-2 text-white text-sm md:text-base">
             <span id="scoreDisplay">Score: 0</span>
             <span id="livesDisplay">Lives: 3</span>
@@ -44,8 +38,7 @@
         <p class="keyboard-instructions">Use Arrow Keys or WASD to Move</p>
     </div>
 
-    <!-- LEADERBOARD MODAL (Styled to match reference) -->
-    <div id="leaderboardContainer">
+    <div id="leaderboardContainer" style="display: none;">
         <div class="leaderboard-content">
             <button id="closeLeaderboardBtn" aria-label="Close Leaderboard">&times;</button>
             <h2>Leaderboard</h2>
@@ -62,11 +55,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Scores will be injected here by your pacman.jss -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
-            <!-- Placeholder for inputting name when a high score is achieved -->
             <div id="nameInputContainer" class="p-5 hidden flex-col items-center">
                 <p class="text-red-500 mb-2 font-bold">New High Score!</p>
                 <input type="text" id="playerNameInput" placeholder="Enter your initials (max 3)" maxlength="3" class="p-2 border rounded text-black text-sm w-full max-w-xs mb-3"/>
@@ -75,7 +66,6 @@
         </div>
     </div>
 
-    <!-- Game Over/Win Modal -->
     <div id="gameOverModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
         <div class="bg-white p-6 rounded-lg shadow-xl text-center">
             <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-red-600">Game Over</h3>
