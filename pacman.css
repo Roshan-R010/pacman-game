@@ -1,8 +1,289 @@
-body {
-    text-align: center;
-    overflow: hidden;
-}
+ /* Base Styling - Adapted from user's original CSS and Tailwind */
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222; /* Dark background */
+            font-family: 'Rubik', Arial, sans-serif;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-#board {
-    background-color: black;
-}
+        /* Game Container */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #070a28;
+            border: 5px solid #34428f; /* Red border for play area */
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 0 30px rgba(0, 34, 255, 0.5);
+            position: relative;
+            margin: 20px;
+            max-width: 90vw;
+        }
+
+        #board {
+            background-color: black;
+            border: 2px solid #fffbfb;
+            display: block;
+            touch-action: none; /* Prevent scrolling/zooming on canvas touch */
+        }
+
+        /* Leaderboard Button (Pink) - User's original style, slightly enhanced */
+        #showLeaderboardBtn {
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 9999px; /* Pill shape */
+            cursor: pointer;
+            font-size: 14px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            transition: all 0.2s;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+        }
+        #showLeaderboardBtn:hover {
+            background-color: #e05e9e;
+            transform: translateY(-1px);
+        }
+
+        /* Controls Area */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px 0;
+            margin-top: 10px;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 45px); /* Increased size for touch */
+            grid-template-rows: repeat(3, 45px);
+            gap: 5px;
+        }
+
+        .d-pad-button {
+            width: 45px;
+            height: 45px;
+            background-color: #0000ff; /* Blue color */
+            border: none;
+            border-radius: 50%; /* Circular buttons */
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            user-select: none;
+            box-shadow: 0 3px #0000cc; /* 3D effect */
+            -webkit-tap-highlight-color: transparent;
+        }
+        .d-pad-button:active {
+            background-color: #0000cc;
+            transform: translateY(3px);
+            box-shadow: none;
+        }
+
+        /* D-pad button positioning within the grid */
+        #up-btn { grid-area: 1 / 2 / 2 / 3; }
+        #left-btn { grid-area: 2 / 1 / 3 / 2; }
+        #right-btn { grid-area: 2 / 3 / 3 / 4; }
+        #down-btn { grid-area: 3 / 2 / 4 / 3; }
+
+        .keyboard-instructions {
+            color: #ccc;
+            font-size: 12px;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* --- LEADERBOARD STYLING (MATCHING REFERENCE CSS) --- */
+
+        /* Leaderboard Modal Backdrop */
+        #leaderboardContainer {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            overflow: auto;
+            padding-top: 5vh;
+        }
+
+        /* Leaderboard Content (The White Card - Reference 'main') */
+        .leaderboard-content {
+            background-color: #ffffff; /* White background */
+            margin: 5% auto;
+            padding: 0; /* Important: remove default padding to let header manage its space */
+            border: none;
+            width: 90%;
+            max-width: px;
+            box-shadow: 0px 5px 15px 8px #e4e7fb;
+            border-radius: 0.5rem;
+            color: #141a39; /* Dark text */
+            position: relative;
+            overflow: hidden; /* Contains the ribbon shadow */
+        }
+
+        /* Leaderboard Title (Ribbon Effect - Reference 'ribbon' and 'h1') */
+        .leaderboard-content h2 {
+            font-family: 'Rubik', sans-serif;
+            font-size: 18PX; /* Adapted size */
+            color: #fff; /* White text for ribbon */
+            text-transform: uppercase;
+            text-align: center;
+            background-color: #5c5be5; /* Ribbon color */
+            padding: 1.5rem 2rem;
+            margin-top: 0;
+            position: relative;
+            box-shadow: 0px 15px 11px -6px #7a7a7d;
+        }
+        /* Ribbon decorative corners (simplified adaptation) */
+        .leaderboard-content h2::before,
+        .leaderboard-content h2::after {
+            content: "";
+            height: 1.5rem;
+            width: 1.5rem;
+            bottom: -0.8rem;
+            background-color: #5c5be5;
+            position: absolute;
+            transform: rotate(45deg);
+            z-index: -1;
+        }
+        .leaderboard-content h2::before { left: 0.35rem; }
+        .leaderboard-content h2::after { right: 0.35rem; }
+
+
+        /* Close Button (Reference 'share' button style) */
+        #closeLeaderboardBtn {
+            background-color: #f55e77; /* Pink/Red color */
+            border: 0;
+            border-bottom: 0.2rem solid #c0506a;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #fff;
+            font-size: 20px;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            z-index: 10;
+            transition: border-bottom 0.1s;
+        }
+        #closeLeaderboardBtn:active {
+            border-bottom: 0;
+        }
+
+        /* Table Styling */
+        #leaderboardTable {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            color: #141a39;
+            margin-top: 10px;
+            padding: 10px 20px;
+        }
+
+        #leaderboardTable th, #leaderboardTable td {
+            height: 5rem; /* Match reference row height */
+            font-family: 'Rubik', sans-serif;
+            font-size: 1.4rem;
+            padding: 1rem 2rem;
+            text-align: left;
+            border: none; /* Remove table borders */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #leaderboardTable th {
+            color: #5c5be5; /* Blue header text */
+            background-color: transparent;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Table Row Styling */
+        #leaderboardTable tbody tr {
+            transition: all 0.2s ease-in-out;
+            border-radius: 0.2rem;
+        }
+
+        #leaderboardTable tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        #leaderboardTable tbody tr:hover {
+            background-color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0px 5px 15px 8px #e4e7fb;
+            position: relative; /* Needed for z-index on hover */
+            z-index: 5;
+        }
+
+        /* Rank Column Size */
+        #leaderboardTable th:nth-child(1),
+        #leaderboardTable td:nth-child(1) {
+            width: 15%;
+            font-weight: bold;
+            font-size: 15px;
+            color: #5c5be5;
+        }
+        /* Player Name Column */
+        #leaderboardTable th:nth-child(2),
+        #leaderboardTable td:nth-child(2) {
+            width: 40%;
+        }
+        /* Score Column */
+        #leaderboardTable th:nth-child(3),
+        #leaderboardTable td:nth-child(3) {
+            width: 25%;
+            font-weight: bold;
+        }
+        /* Date Column */
+        #leaderboardTable th:nth-child(4),
+        #leaderboardTable td:nth-child(4) {
+            width: 20%;
+            font-size: 1rem;
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 600px) {
+            .game-container {
+                border-width: 3px;
+                padding: 5px;
+            }
+            .d-pad {
+                grid-template-columns: repeat(3, 40px);
+                grid-template-rows: repeat(3, 40px);
+            }
+            .d-pad-button {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            .keyboard-instructions {
+                display: none; /* Hide keyboard instructions on mobile */
+            }
+            .leaderboard-content {
+                width: 95%;
+                margin-top: 10px;
+            }
+        }

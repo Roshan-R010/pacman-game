@@ -1,257 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Pac-Man Game</title>
-    <link rel="stylesheet" href="style.css"> <script src="pacman.js"></script>
-    <style>
-        /* Basic Reset & Body Styling */
-        body {
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #222; /* Dark background */
-            font-family: Arial, sans-serif;
-            flex-direction: column; /* Stack elements vertically */
-            overflow: hidden; /* Prevent scrolling on mobile */
-        }
-
-        /* Game Container */
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #333;
-            border: 5px solid #ff0000; /* Red border for play area */
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            position: relative; /* For leaderboard button positioning */
-        }
-
-        #board {
-            background-color: black;
-            border: 2px solid #555;
-            display: block; /* Ensure no extra spacing below canvas */
-        }
-
-        /* Leaderboard Button (Pink) */
-        #showLeaderboardBtn {
-            background-color: #ff69b4; /* Pink color */
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            position: absolute; /* Position relative to .game-container */
-            top: 10px;
-            right: 10px;
-            z-index: 10; /* Ensure it's above other elements */
-        }
-        #showLeaderboardBtn:hover {
-            background-color: #e05e9e;
-        }
-
-        /* Controls Area */
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 15px 0;
-            margin-top: 10px; /* Space between canvas and controls */
-        }
-
-        .d-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 40px); /* 3 columns, 40px each */
-            grid-template-rows: repeat(3, 40px);    /* 3 rows, 40px each */
-            gap: 2px;
-        }
-
-        .d-pad-button {
-            width: 40px;
-            height: 40px;
-            background-color: #0000ff; /* Blue color */
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 18px;
-            user-select: none; /* Prevent text selection on touch */
-            -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
-        }
-        .d-pad-button:active {
-            background-color: #0000cc; /* Darker blue on press */
-        }
-
-        /* D-pad button positioning within the grid */
-        #up-btn { grid-area: 1 / 2 / 2 / 3; } /* Row 1, Col 2 */
-        #left-btn { grid-area: 2 / 1 / 3 / 2; } /* Row 2, Col 1 */
-        #right-btn { grid-area: 2 / 3 / 3 / 4; } /* Row 2, Col 3 */
-        #down-btn { grid-area: 3 / 2 / 4 / 3; } /* Row 3, Col 2 */
-
-        /* Hide keyboard instructions on small screens */
-        .keyboard-instructions {
-            color: #ccc;
-            font-size: 12px;
-            margin-top: 5px;
-            text-align: center;
-        }
-
-        /* Leaderboard Modal */
-        #leaderboardContainer {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            padding-top: 60px;
-        }
-
-        .leaderboard-content {
-            background-color: #444;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
-            border-radius: 8px;
-            color: white;
-            position: relative;
-        }
-
-        .leaderboard-content h2 {
-            text-align: center;
-            color: #ff69b4; /* Pink */
-            margin-bottom: 20px;
-        }
-
-        #leaderboardTable {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        #leaderboardTable th, #leaderboardTable td {
-            border: 1px solid #555;
-            padding: 8px;
-            text-align: left;
-        }
-
-        #leaderboardTable th {
-            background-color: #555;
-            color: #eee;
-        }
-
-        #leaderboardTable tr:nth-child(even) {
-            background-color: #3a3a3a;
-        }
-
-        #leaderboardTable tbody tr:hover {
-            background-color: #505050;
-        }
-
-        #closeLeaderboardBtn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            background: none;
-        }
-        #closeLeaderboardBtn:hover,
-        #closeLeaderboardBtn:focus {
-            color: #fff;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Media Queries for Responsiveness */
-        @media (max-width: 600px) {
-            .game-container {
-                border-width: 3px;
-                padding: 5px;
-                width: 95%; /* Take up more width on smaller screens */
-            }
-            #board {
-                width: 100%; /* Canvas fills container */
-                height: auto;
-            }
-            #showLeaderboardBtn {
-                padding: 6px 10px;
-                font-size: 12px;
-                top: 5px;
-                right: 5px;
-            }
-            .d-pad {
-                grid-template-columns: repeat(3, 35px);
-                grid-template-rows: repeat(3, 35px);
-            }
-            .d-pad-button {
-                width: 35px;
-                height: 35px;
-                font-size: 16px;
-            }
-            .keyboard-instructions {
-                display: none; /* Hide keyboard instructions on mobile */
-            }
-            .leaderboard-content {
-                width: 90%;
-                margin-top: 30px;
-            }
-        }
+    <!-- Use Tailwind for base structure and fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Your external pacman.jss file - ADDED HERE -->
+    <script src="pacman.js"></script> 
+    
+    <style src="pacman.css">
+       
     </style>
 </head>
 <body>
     <div class="game-container">
         <button id="showLeaderboardBtn">🏆 Leaderboard</button>
 
+        <!-- Display Game Status -->
+        <div class="flex justify-between w-full p-2 text-white text-sm md:text-base">
+            <span id="scoreDisplay">Score: 0</span>
+            <span id="livesDisplay">Lives: 3</span>
+            <span id="statusMessage" class="font-bold text-yellow-400">Ready!</span>
+        </div>
+
         <canvas id="board"></canvas>
 
         <div class="controls">
             <div class="d-pad">
-                <button id="up-btn" class="d-pad-button">↑</button>
-                <button id="left-btn" class="d-pad-button">←</button>
-                <button id="right-btn" class="d-pad-button">→</button>
-                <button id="down-btn" class="d-pad-button">↓</button>
+                <button id="up-btn" class="d-pad-button" data-direction="UP">↑</button>
+                <div class="col-span-1"></div>
+                <button id="left-btn" class="d-pad-button" data-direction="LEFT">←</button>
+                <button id="start-btn" class="d-pad-button bg-green-600 !w-[unset] !h-[unset] !rounded-md" style="grid-area: 2 / 2 / 3 / 3; font-size: 12px;" >Start</button>
+                <button id="right-btn" class="d-pad-button" data-direction="RIGHT">→</button>
+                <div class="col-span-1"></div>
+                <button id="down-btn" class="d-pad-button" data-direction="DOWN">↓</button>
             </div>
         </div>
         <p class="keyboard-instructions">Use Arrow Keys or WASD to Move</p>
     </div>
 
+    <!-- LEADERBOARD MODAL (Styled to match reference) -->
     <div id="leaderboardContainer">
         <div class="leaderboard-content">
-            <button id="closeLeaderboardBtn">&times;</button>
+            <button id="closeLeaderboardBtn" aria-label="Close Leaderboard">&times;</button>
             <h2>Leaderboard</h2>
-            <table id="leaderboardTable">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player Name</th>
-                        <th>Score</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="p-5">
+                <p id="loadingScores" class="text-center text-sm text-gray-500">Loading scores...</p>
+                <p id="leaderboardUser" class="text-xs mb-3 text-center text-gray-500">Your User ID: <span id="userIdDisplay"></span></p>
+                <table id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player Name</th>
+                            <th>Score</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Scores will be injected here by your pacman.jss -->
                     </tbody>
-            </table>
+                </table>
+            </div>
+            <!-- Placeholder for inputting name when a high score is achieved -->
+            <div id="nameInputContainer" class="p-5 hidden flex-col items-center">
+                <p class="text-red-500 mb-2 font-bold">New High Score!</p>
+                <input type="text" id="playerNameInput" placeholder="Enter your initials (max 3)" maxlength="3" class="p-2 border rounded text-black text-sm w-full max-w-xs mb-3"/>
+                <button id="submitScoreBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">Submit Score</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over/Win Modal -->
+    <div id="gameOverModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+            <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-red-600">Game Over</h3>
+            <p id="modalScore" class="mb-4 text-gray-700">Final Score: 0</p>
+            <button id="restartGameBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">Play Again</button>
         </div>
     </div>
 </body>
