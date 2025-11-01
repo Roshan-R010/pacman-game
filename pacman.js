@@ -17,29 +17,29 @@ let pacmanLeftImage;
 let pacmanRightImage;
 let wallImage;
 
-//X = wall, O = skip/empty (no food), P = pac man, ' ' = food
+//X = wall, O = skip, P = pac man, ' ' = food
 //Ghosts: b = blue, o = orange, p = pink, r = red
 const tileMap = [
     "XXXXXXXXXXXXXXXXXXX",
-    "X                 X", 
-    "X XXrXXX X XXX XX X", 
-    "X  X     o       X", 
-    "X XX X XXXXX X XX X",
-    "X  X              X", 
-    "XXXX XXXX XXXX XXXX",
-    "  X           X    ", 
-    "XXXX X XXbXX X XXXX", 
-    "    P              ", 
-    "XXXX X XXXXX X XXXX",
-    "     X           X ", 
-    "XXXX X XXXXX X XXXX",
-    "X             X    X", 
+    "X                 X",
     "X XX XXX X XXX XX X",
-    "X X       p      X X", 
+    "X                 X",
+    "X XX X XXXXX X XX X",
+    "X  X         X   X",
+    "XXXX XXXX XXXX XXXX",
+    "OOOX X       X XOOO",
+    "XXXX X XXrXX X XXXX",
+    "O    bpo         O",
+    "XXXX X XXXXX X XXXX",
+    "OOOX X       X XOOO",
+    "XXXX X XXXXX X XXXX",
+    "X          X       X",
+    "X XX XXX X XXX XX X",
+    "X X    P       X X",
     "XX X X XXXXX X X XX",
-    "X  X   X X   X   X", 
+    "X  X   X X   X   X",
     "X XXXXXX X XXXXXX X",
-    "X                 X", 
+    "X                 X",
     "XXXXXXXXXXXXXXXXXXX"
 ];
 
@@ -49,12 +49,14 @@ const ghosts = new Set();
 let pacman = null; 
 
 const directions = ['U', 'D', 'L', 'R']; //up down left right
+const deathSound = new Audio('./pacman_death.wav');
+const begningSound = new Audio('./pacman_beginning.wav');
 let score = 0;
 let lives = 3;
 let gameOver = false;
+let gamePausedAfterDeath = false;
 let gameStarted = false; // Initial game state
 let gameLoopTimeout; // Define the game loop variable globally
-let scoreSubmitted = false; // Flag to ensure prompt runs once after game over
 
 window.onload = function() {
     board = document.getElementById("board");
@@ -110,10 +112,6 @@ window.onload = function() {
         document.getElementById('gameOverModal').classList.add('hidden');
         startGame(true); 
     });
-
-    // We assume the submit button is handled implicitly if using prompt, 
-    // but if you added it to the modal, keep this listener:
-    // document.getElementById('submitScoreBtn').addEventListener('click', submitFinalScore); 
 }
 
 function loadImages() {
@@ -150,24 +148,24 @@ function startGame(isRestart = false) {
     lives = 3;
     gameOver = false;
     gameStarted = true;
-    scoreSubmitted = false; // Reset flag
+    begningSound.play();
     
     // 3. Set initial random direction and zero velocity for ghosts
     for (let ghost of ghosts.values()) {
         ghost.velocityX = 0; 
         ghost.velocityY = 0;
-        ghost.chooseNewDirection(); 
+        const newDirection = directions[Math.floor(Math.random() * 4)];
+        ghost.direction = newDirection; 
     }
     
     // 4. Update status displays
     document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
     document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
     document.getElementById('statusMessage').textContent = 'Go!';
-    
-    document.getElementById('gameOverModal').classList.add('hidden');
 
     // 5. Start the game loop
     if (isRestart) {
+        
         update();
     } else {
         gameLoopTimeout = setTimeout(update, 50);
@@ -179,7 +177,7 @@ function resetGame() {
     // 1. Stop the game loop
     clearTimeout(gameLoopTimeout);
     
-    // 2. Clear entities
+    // 2. Clear entities (passing false for walls-only load, which now creates NO entities)
     loadMap(false); 
     
     // 3. Reset game state variables
@@ -187,7 +185,6 @@ function resetGame() {
     lives = 3;
     gameOver = false;
     gameStarted = false; 
-    scoreSubmitted = false;
 
     // 4. Reset UI
     document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
@@ -199,7 +196,7 @@ function resetGame() {
     document.getElementById('start-btn').classList.remove('bg-red-600');
     document.getElementById('start-btn').classList.add('bg-green-600');
     
-    // 6. Redraw the board
+    // 6. Redraw the board with only black background and "Press START" message
     draw(); 
 }
 
@@ -219,46 +216,41 @@ function loadMap(fullLoad = true) {
             const x = c * tileSize;
             const y = r * tileSize;
 
-            if (tileMapChar == 'X') { // Wall
-                if (fullLoad) {
-                    const wall = new Block(wallImage, x, y, tileSize, tileSize);
-                    walls.add(wall);
+            // ⭐️ FIX: Only create walls if fullLoad is true
+            if (fullLoad && tileMapChar == 'X') { //block wall
+                const wall = new Block(wallImage, x, y, tileSize, tileSize);
+                walls.add(wall);
+            }
+            
+            // Only create other entities if fullLoad is true
+            if (fullLoad) {
+                if (tileMapChar == 'b') { //blue ghost
+                    const ghost = new Block(blueGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
                 }
-            } else { // Not a wall
-                if (fullLoad) {
-                    if (tileMapChar == 'b') { //blue ghost
-                        const ghost = new Block(blueGhostImage, x, y, tileSize, tileSize);
-                        ghosts.add(ghost);
-                    }
-                    else if (tileMapChar == 'o') { //orange ghost
-                        const ghost = new Block(orangeGhostImage, x, y, tileSize, tileSize);
-                        ghosts.add(ghost);
-                    }
-                    else if (tileMapChar == 'p') { //pink ghost
-                        const ghost = new Block(pinkGhostImage, x, y, tileSize, tileSize);
-                        ghosts.add(ghost);
-                    }
-                    else if (tileMapChar == 'r') { //red ghost
-                        const ghost = new Block(redGhostImage, x, y, tileSize, tileSize);
-                        ghosts.add(ghost);
-                    }
-                    else if (tileMapChar == 'P') { //pacman
-                        pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
-                    }
-                    
-                    // Add food if it's an empty space, and not 'O' (skip/no food zone)
-                    if (tileMapChar === ' ' || tileMapChar === 'P' || 
-                        ['b', 'o', 'p', 'r'].includes(tileMapChar)) {
-                        // Food added slightly offset to be centered in tile
-                        const food = new Block(null, x + tileSize / 2 - 2, y + tileSize / 2 - 2, 4, 4);
-                        foods.add(food);
-                    }
+                else if (tileMapChar == 'o') { //orange ghost
+                    const ghost = new Block(orangeGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'p') { //pink ghost
+                    const ghost = new Block(pinkGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'r') { //red ghost
+                    const ghost = new Block(redGhostImage, x, y, tileSize, tileSize);
+                    ghosts.add(ghost);
+                }
+                else if (tileMapChar == 'P') { //pacman
+                    pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
+                }
+                else if (tileMapChar == ' ') { //empty is food (pellets)
+                    const food = new Block(null, x + 14, y + 14, 4, 4);
+                    foods.add(food);
                 }
             }
         }
     }
 }
-
 
 function update() {
     if (!gameStarted) {
@@ -267,18 +259,21 @@ function update() {
     }
     
     if (gameOver) {
-        // This ensures the Game Over UI is displayed when the loop terminates.
         document.getElementById('statusMessage').textContent = 'Game Over!';
         document.getElementById('modalTitle').textContent = 'Game Over';
         document.getElementById('modalScore').textContent = `Final Score: ${score}`;
         document.getElementById('gameOverModal').classList.remove('hidden');
-
-        // Ensure START/RESET button reverts its state
+        
+        // Ensure button reverts to Start state on game over
         document.getElementById('start-btn').textContent = 'Start';
         document.getElementById('start-btn').classList.remove('bg-red-600');
         document.getElementById('start-btn').classList.add('bg-green-600');
-
-        return; 
+        
+        const playerName = prompt("Game Over! Enter your name for the leaderboard:", "Player");
+        if (playerName) {
+            sendScore(playerName, score);
+        }
+        return;
     }
     gameLoopTimeout = setTimeout(update, 50); 
     move();
@@ -288,7 +283,7 @@ function update() {
 function draw() {
     context.clearRect(0, 0, board.width, board.height);
     
-    // Only draw game elements if the game has started
+    // ⭐️ FIX: Only draw walls if the game has started (or if walls exist, which now only happens on start)
     if (gameStarted) {
         // Draw walls
         for (let wall of walls.values()) {
@@ -357,94 +352,58 @@ function move() {
             ghost.updateVelocity(); 
         }
         
-        if (collision(ghost, pacman)) {
-            lives -= 1;
-            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
-            
-            if (lives == 0) {
-                gameOver = true;
-                gameStarted = false; 
-                clearTimeout(gameLoopTimeout); 
-                
-                // 🌟 THE IMMEDIATE PROMPT FIX (V8 - UGLY BUT RELIABLE):
-                if (!scoreSubmitted) {
-                    const playerName = prompt(`Game Over! Final Score: ${score}\nEnter your name for the leaderboard:`, "Player");
-                    if (playerName) {
-                        sendScore(playerName, score);
-                    }
-                    scoreSubmitted = true;
-                }
-                
-                return; 
-            }
-            resetPositions();
+        // ... in move() function, inside the loop over ghosts ...
+
+         if (collision(ghost, pacman) && !gamePausedAfterDeath) { // Check for collision and if not already paused
+            clearTimeout(gameLoopTimeout); // Stop the main update loop
+            lives -= 1;
+            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+            
+            if (lives == 0) {
+                gameOver = true;
+                gameStarted = false; 
+                // Game Over logic is handled in the next update() call, so we just return
+                gameLoopTimeout = setTimeout(update, 50); // One final call to trigger the game over modal
+                return;
+            }
+            
+            // PAUSE AND DEATH MESSAGE LOGIC
+            gamePausedAfterDeath = true;
+            deathSound.play(); // Play death sound effect
+            
+            
+            // Pause for 3 seconds
+            setTimeout(() => {
+                resetPositions();
+                document.getElementById('statusMessage').textContent = 'Go!';
+                gamePausedAfterDeath = false;
+                
+                // Restart the game loop
+                gameLoopTimeout = setTimeout(update, 50);
+            }, 2000); // 3000 milliseconds = 3 seconds
+
+            return; // Exit move() immediately
+        }
+
+// ... rest of the move() function ...
+
+        // Ghost Movement Logic (simple house exit logic)
+        if (ghost.y == tileSize * 9 && ghost.direction != 'U' && ghost.direction != 'D' && ghost.velocityX == 0) {
+            ghost.updateDirection('U');
         }
-
-        // Ghost Movement Logic (house exit)
-        const currentTileCol = Math.round(ghost.x / tileSize);
-        const currentTileRow = Math.round(ghost.y / tileSize);
-
-        if (currentTileRow === 9 && (currentTileCol === 8 || currentTileCol === 9 || currentTileCol === 10)) {
-            if (ghost.canMoveInDirection('U')) {
-                ghost.direction = 'U';
-                ghost.updateVelocity();
-            }
-        }
-
 
         ghost.x += ghost.velocityX;
         ghost.y += ghost.velocityY;
         
         // Ghost collision with wall logic
         for (let wall of walls.values()) {
-            if (collision(ghost, wall) || ghost.x < 0 || ghost.x + ghost.width > boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
-                
-                // 1. Rollback position
+            if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
                 ghost.x -= ghost.velocityX;
                 ghost.y -= ghost.velocityY;
                 
-                // 2. Stop movement
-                ghost.velocityX = 0;
-                ghost.velocityY = 0;
-                
-                // 3. Choose a valid, non-colliding direction
-                ghost.chooseNewDirection();
-                break;
-            }
-        }
-        
-        // 4. SMART PATHING (Preventing looping in straightaways and encouraging exploration)
-        if (Math.abs(ghost.x % tileSize) < tileSize / 2 && Math.abs(ghost.y % tileSize) < tileSize / 2) { 
-            let possibleTurns = [];
-            if (ghost.direction === 'U' || ghost.direction === 'D') { 
-                if (ghost.canMoveInDirection('L')) possibleTurns.push('L');
-                if (ghost.canMoveInDirection('R')) possibleTurns.push('R');
-            } else { 
-                if (ghost.canMoveInDirection('U')) possibleTurns.push('U');
-                if (ghost.canMoveInDirection('D')) possibleTurns.push('D');
-            }
-
-            if (ghost.canMoveInDirection(ghost.direction)) {
-                possibleTurns.push(ghost.direction);
-            }
-            
-            let nonReversalTurns = possibleTurns.filter(dir => dir !== ghost.getOppositeDirection());
-            if (nonReversalTurns.length === 0) {
-                nonReversalTurns = possibleTurns;
-            }
-
-            if (nonReversalTurns.length > 0) {
-                nonReversalTurns.sort(() => Math.random() - 0.5);
-                ghost.direction = nonReversalTurns[0];
-                ghost.updateVelocity();
-            } else {
-                if (ghost.canMoveInDirection(ghost.getOppositeDirection())) {
-                    ghost.direction = ghost.getOppositeDirection();
-                    ghost.updateVelocity();
-                } else {
-                    ghost.velocityX = 0;
-                    ghost.velocityY = 0;
-                }
+                // Change direction randomly
+                const newDirection = directions[Math.floor(Math.random() * 4)];
+                ghost.updateDirection(newDirection);
             }
         }
     }
@@ -473,10 +432,11 @@ function move() {
             gameStarted = true;
             document.getElementById('statusMessage').textContent = 'Go!';
             
+            // Set initial velocity for ghosts on new level start
             for (let ghost of ghosts.values()) {
                 ghost.updateVelocity();
             }
-        }, 1000); 
+        }, 1000); // 1 second pause
     }
 }
 
@@ -520,10 +480,10 @@ function handleInput(e) {
 }
 
 function collision(a, b) {
-    return a.x < b.x + b.width &&    
-        a.x + a.width > b.x &&      
-        a.y < b.y + b.height &&     
-        a.y + a.height > b.y;        
+    return a.x < b.x + b.width &&    
+        a.x + a.width > b.x &&      
+        a.y < b.y + b.height &&     
+        a.y + a.height > b.y;        
 }
 
 function resetPositions() {
@@ -536,14 +496,13 @@ function resetPositions() {
         ghost.reset();
         ghost.velocityX = 0;
         ghost.velocityY = 0;
-        
-        // Ensure initial direction is valid and not immediately blocked
-        ghost.chooseNewDirection(); 
+        const newDirection = directions[Math.floor(Math.random() * 4)];
+        ghost.direction = newDirection; 
     }
 }
 
 // ===================================
-// LEADERBOARD FUNCTIONS (unchanged)
+// LEADERBOARD FUNCTIONS (unchanged for core game logic)
 // ===================================
 
 function sendScore(playerName, finalScore) {
@@ -677,106 +636,12 @@ class Block {
             // Path is clear!
         }
     }
-    
-    // New logic for choosing a non-colliding direction (used by ghosts)
-    chooseNewDirection() {
-        const currentDirection = this.direction;
-        const oppositeDirection = this.getOppositeDirection();
-        
-        // Prioritize turning off the current axis if possible
-        let potentialDirections = directions.filter(dir => 
-            (currentDirection === 'U' || currentDirection === 'D') ? (dir === 'L' || dir === 'R') : (dir === 'U' || dir === 'D')
-        );
-        
-        // Add current direction as a possibility
-        potentialDirections.push(currentDirection);
-
-        // Add the opposite direction as a last resort, but only once
-        if (!potentialDirections.includes(oppositeDirection)) {
-            potentialDirections.push(oppositeDirection);
-        }
-
-        // Shuffle for randomness
-        potentialDirections.sort(() => Math.random() - 0.5);
-
-        let newDirection = null;
-
-        // Try to find a valid direction
-        for (const dir of potentialDirections) {
-            if (this.canMoveInDirection(dir)) {
-                newDirection = dir;
-                break; 
-            }
-        }
-        
-        if (newDirection) {
-             this.direction = newDirection;
-             this.updateVelocity();
-        } else {
-            // If still stuck, try reversing as the only option
-            if (this.canMoveInDirection(oppositeDirection)) {
-                this.direction = oppositeDirection;
-                this.updateVelocity();
-            } else {
-                // If completely stuck, stop movement
-                this.velocityX = 0;
-                this.velocityY = 0;
-            }
-        }
-    }
-    
-    getOppositeDirection() {
-        if (this.direction === 'U') return 'D';
-        if (this.direction === 'D') return 'U';
-        if (this.direction === 'L') return 'R';
-        if (this.direction === 'R') return 'L';
-        return null; 
-    }
-    
-    // Check if moving in a direction causes immediate collision 
-    canMoveInDirection(testDirection) {
-        const originalX = this.x;
-        const originalY = this.y;
-        const originalDir = this.direction;
-        
-        // Temporarily set new direction and velocity
-        this.direction = testDirection;
-        this.updateVelocity(); 
-        
-        const testX = originalX + this.velocityX;
-        const testY = originalY + this.velocityY;
-
-        let collisionDetected = false;
-
-        // Check against board boundaries
-        if (testX < 0 || testX + this.width > boardWidth || testY < 0 || testY + this.height > boardHeight) {
-            collisionDetected = true;
-        } else {
-            // Create a temporary object for collision checking
-            const tempBlock = { x: testX, y: testY, width: this.width, height: this.height };
-            
-            // Check against walls
-            for (let wall of walls.values()) {
-                if (collision(tempBlock, wall)) {
-                    collisionDetected = true;
-                    break;
-                }
-            }
-        }
-
-        // Restore original state and velocity
-        this.direction = originalDir;
-        this.updateVelocity(); // Recalculate velocity based on restored direction
-
-        return !collisionDetected;
-    }
 
     updateDirection(direction) {
         const prevDirection = this.direction;
         this.direction = direction;
         this.updateVelocity();
 
-        // This check is mainly for Pacman, so ghost logic isn't impacted
         if (this === pacman) {
             return;
         }
@@ -818,6 +683,6 @@ class Block {
     reset() {
         this.x = this.startX;
         this.y = this.startY;
-        this.direction = 'R'; // Default direction
+        this.direction = 'R'; 
     }
 };
