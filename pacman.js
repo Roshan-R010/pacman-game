@@ -49,9 +49,12 @@ const ghosts = new Set();
 let pacman = null; 
 
 const directions = ['U', 'D', 'L', 'R']; //up down left right
+const deathSound = new Audio('./pacman_death.wav');
+const begningSound = new Audio('./pacman_beginning.wav');
 let score = 0;
 let lives = 3;
 let gameOver = false;
+let gamePausedAfterDeath = false;
 let gameStarted = false; // Initial game state
 let gameLoopTimeout; // Define the game loop variable globally
 
@@ -145,6 +148,7 @@ function startGame(isRestart = false) {
     lives = 3;
     gameOver = false;
     gameStarted = true;
+    begningSound.play();
     
     // 3. Set initial random direction and zero velocity for ghosts
     for (let ghost of ghosts.values()) {
@@ -161,6 +165,7 @@ function startGame(isRestart = false) {
 
     // 5. Start the game loop
     if (isRestart) {
+        
         update();
     } else {
         gameLoopTimeout = setTimeout(update, 50);
@@ -347,18 +352,40 @@ function move() {
             ghost.updateVelocity(); 
         }
         
-        if (collision(ghost, pacman)) {
-            lives -= 1;
-            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
-            
-            if (lives == 0) {
-                gameOver = true;
-                gameStarted = false; 
-                clearTimeout(gameLoopTimeout); 
-                return; 
-            }
-            resetPositions();
-        }
+        // ... in move() function, inside the loop over ghosts ...
+
+         if (collision(ghost, pacman) && !gamePausedAfterDeath) { // Check for collision and if not already paused
+            clearTimeout(gameLoopTimeout); // Stop the main update loop
+            lives -= 1;
+            document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+            
+            if (lives == 0) {
+                gameOver = true;
+                gameStarted = false; 
+                // Game Over logic is handled in the next update() call, so we just return
+                gameLoopTimeout = setTimeout(update, 50); // One final call to trigger the game over modal
+                return;
+            }
+            
+            // PAUSE AND DEATH MESSAGE LOGIC
+            gamePausedAfterDeath = true;
+            deathSound.play(); // Play death sound effect
+            
+            
+            // Pause for 3 seconds
+            setTimeout(() => {
+                resetPositions();
+                document.getElementById('statusMessage').textContent = 'Go!';
+                gamePausedAfterDeath = false;
+                
+                // Restart the game loop
+                gameLoopTimeout = setTimeout(update, 50);
+            }, 2000); // 3000 milliseconds = 3 seconds
+
+            return; // Exit move() immediately
+        }
+
+// ... rest of the move() function ...
 
         // Ghost Movement Logic (simple house exit logic)
         if (ghost.y == tileSize * 9 && ghost.direction != 'U' && ghost.direction != 'D' && ghost.velocityX == 0) {
