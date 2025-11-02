@@ -17,6 +17,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 $playerName = $data['playerName'] ?? 'Anonymous';
 $scoreValue = $data['score'] ?? 0;
 
+$playerName = strtoupper($playerName);
 // Sanitize inputs
 $playerName = $conn->real_escape_string($playerName);
 $scoreValue = (int)$scoreValue;
