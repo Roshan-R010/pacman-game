@@ -749,9 +749,14 @@ function displayLeaderboard(leaderboardData) {
         row.insertCell().textContent = index + 1; // Rank
         row.insertCell().textContent = entry.player_name;
         row.insertCell().textContent = entry.score;
-        row.insertCell().textContent = entry.date_achieved;
+
+        row.cells[0].classList.add("popupnumber");
+        row.cells[1].classList.add("popupname");
+        row.cells[2].classList.add("popuppoints");
+
     });
 
+        
     document.getElementById('leaderboardContainer').style.display = 'block';
 }
 

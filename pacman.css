@@ -1,5 +1,5 @@
 /* Base Styling - Adapted from user's original CSS and Tailwind */
-
+ 
         body {
 
             margin: 0;
@@ -22,6 +22,12 @@
 
         }
 
+        /*Table*/
+        table {
+            border-collapse: collapse;
+              text-align: center;
+              margin: auto;
+        }
 
 
         /* Game Container */
@@ -243,7 +249,7 @@
             overflow: auto;
 
             padding-top: 5vh;
-
+            text-align: center;
         }
 
 
@@ -412,7 +418,7 @@
 
             font-size: 1.4rem;
 
-            padding: 1rem 2rem;
+            padding: 10px;
 
             text-align: left;
 
@@ -423,6 +429,8 @@
             overflow: hidden;
 
             text-overflow: ellipsis;
+            word-break: breakword;
+            max-width: 200px;
 
         }
 
@@ -501,6 +509,8 @@
         #leaderboardTable td:nth-child(2) {
 
             width: 40%;
+            text-align: center;
+            padding: 10px;
 
         }
 
@@ -575,3 +585,577 @@
             }
 
         } 
+
+
+        /*******###Final leaderboard css adjustments###*************/
+        /***Ignore other classes except the leaderboard specific ones***/
+        .popupexit {
+    width: 11rem;
+    height: 3rem;
+    font-family: "Rubik", sans-serif;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    color: #7e7f86;
+    border: 0;
+    background-color: #fff;
+    border-radius: 2rem;
+    cursor: pointer;
+  }
+  .popupexit:hover {
+    border: 0.1rem solid #5c5be5;
+  }
+  .popupcontinue {
+    width: 11rem;
+    height: 3rem;
+    font-family: "Rubik", sans-serif;
+    font-size: 1.3rem;
+    color: #fff;
+    text-transform: uppercase;
+    background-color: #5c5be5;
+    border: 0;
+    border-bottom: 0.2rem solid #3838b8;
+    border-radius: 2rem;
+    cursor: pointer;
+  }
+  .popupcontinue:active {
+    border-bottom: 0;
+  }
+  .popupdate {
+    text-align: center;
+    font-size: 2rem;
+    background-color:black;
+    color: #F4C430;
+    font-size: 2rem;
+
+  }
+
+h1 {
+  font-family:monospace;
+  font-size: 3rem;
+  color: wheat;
+  text-transform: uppercase;
+  cursor: default;
+  text-align: center;
+}
+
+#leaderboard {
+  width: 100%;
+  position: relative;
+}
+
+
+tr {
+  transition: all 0.2s ease-in-out;
+  border-radius: 0.2rem;
+}
+
+tr:not(:first-child):hover {
+  background-color: #fff;
+  transform: scale(1.1);
+  -webkit-box-shadow: 0px 5px 15px 8px #e4e7fb;
+  box-shadow: 0px 5px 15px 8px #e4e7fb;
+}
+
+tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+tr:nth-child(1) {
+  color: #fff;
+}
+
+td {
+  height: 5rem;
+  font-size: 1.4rem;
+  padding: 0.5rem 1rem;
+  position: relative;
+  font-family: "SubVario OT W03 Fat";
+  margin-left: 500px;
+}
+
+  .popupnumber {
+  width: 5rem;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  color: #F4C430;
+  background-color: black;
+}
+
+.popupname {
+  text-align: center;
+  font-size: 3rem;
+  width: 20rem;
+}
+
+.popuppoints {
+  font-weight: bold;
+  font-size: 2rem;
+  text-align: center;
+  width: 10rem;
+}
+
+.points:first-child {
+  width: 10rem;
+}
+
+.popupgold-medal {
+  height: 3rem;
+  margin-left: 1.5rem;
+}
+
+.popupribbon {
+  width: 100%;
+  height: 5.5rem;
+  background-color: #5c5be5;
+  position: relative;
+  -webkit-box-shadow: 0px 15px 11px -6px #7a7a7d;
+  box-shadow: 0px 15px 11px -6px #7a7a7d;
+}
+
+.ribbon::before {
+  content: "";
+  height: 1.5rem;
+  width: 1.5rem;
+  bottom: -0.8rem;
+  left: 0.35rem;
+  transform: rotate(45deg);
+  background-color: #5c5be5;
+  position: absolute;
+  z-index: -1;
+}
+
+.ribbon::after {
+  content: "";
+  height: 1.5rem;
+  width: 1.5rem;
+  bottom: -0.8rem;
+  right: 0.35rem;
+  transform: rotate(45deg);
+  background-color: #5c5be5;
+  position: absolute;
+  z-index: -1;
+}
+
+#buttons {
+  width: 100%;
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.popupexit {
+  width: 11rem;
+  height: 3rem;
+  font-family: "Rubik", sans-serif;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  color: #7e7f86;
+  border: 0;
+  background-color: #fff;
+  border-radius: 2rem;
+  cursor: pointer;
+}
+
+.popupexit:hover {
+  border: 0.1rem solid #5c5be5;
+}
+
+.popupcontinue {
+  width: 11rem;
+  height: 3rem;
+  font-family: "Rubik", sans-serif;
+  font-size: 1.3rem;
+  color: #fff;
+  text-transform: uppercase;
+  background-color: #5c5be5;
+  border: 0;
+  border-bottom: 0.2rem solid #3838b8;
+  border-radius: 2rem;
+  cursor: pointer;
+}
+
+.popupcontinue:active {
+  border-bottom: 0;
+}
+.popupdate {
+  text-align: center;
+  font-size: 2rem;
+  background-color:black;
+  color: #F4C430;
+  font-size: 2rem;
+
+}
+
+@media (max-width: 740px) {
+    * {
+      font-size: 70%;
+    }
+}
+
+@media (max-width: 500px) {
+    * {
+      font-size: 55%;
+    }
+}
+
+@media (max-width: 390px) {
+    * {
+      font-size: 45%;
+    }
+}
+        /* Basic Reset & Body Styling */
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222; /* Dark background */
+            font-family: Arial, sans-serif;
+            flex-direction: column; /* Stack elements vertically */
+            overflow: hidden; /* Prevent scrolling on mobile */
+        }
+
+    /* Game Container */
+    .popupgame-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: black;
+            border: 5px solid #ff0000; /* Red border for play area */
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative; /* For leaderboard button positioning */
+        }
+
+        #board {
+            background-color: black;
+            border: 2px solid #555;
+            display: block; /* Ensure no extra spacing below canvas */
+        }
+
+        /* Leaderboard Button (Pink) */
+        #showLeaderboardBtn {
+            background-color: #ff69b4; /* Pink color */
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            position: absolute; /* Position relative to .game-container */
+            top: 10px;
+            right: 10px;
+            z-index: 10; /* Ensure it's above other elements */
+        }
+        #showLeaderboardBtn:hover {
+            background-color: #e05e9e;
+        }
+
+    /* Controls Area */
+    .popupcontrols {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px 0;
+            margin-top: 10px; /* Space between canvas and controls */
+        }
+
+    .popupd-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 40px); /* 3 columns, 40px each */
+            grid-template-rows: repeat(3, 40px);    /* 3 rows, 40px each */
+            gap: 2px;
+        }
+
+    .popupd-pad-button {
+            width: 40px;
+            height: 40px;
+            background-color: #0000ff; /* Blue color */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 18px;
+            user-select: none; /* Prevent text selection on touch */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+        }
+    .popupd-pad-button:active {
+            background-color: #0000cc; /* Darker blue on press */
+        }
+
+        /* D-pad button positioning within the grid */
+        #up-btn { grid-area: 1 / 2 / 2 / 3; } /* Row 1, Col 2 */
+        #left-btn { grid-area: 2 / 1 / 3 / 2; } /* Row 2, Col 1 */
+        #right-btn { grid-area: 2 / 3 / 3 / 4; } /* Row 2, Col 3 */
+        #down-btn { grid-area: 3 / 2 / 4 / 3; } /* Row 3, Col 2 */
+
+    /* Hide keyboard instructions on small screens */
+    .popupkeyboard-instructions {
+            color: #ccc;
+            font-size: 12px;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* Leaderboard Modal */
+        #leaderboardContainer {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding-top: 60px;
+        }
+
+    .popupleaderboard-content {
+      background-color: #444;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+      border-radius: 8px;
+      color: white;
+      position: relative;
+      text-align: center;
+    }
+
+    .popupleaderboard-content h2 {
+      text-align: center;
+      color: #ff69b4; /* Pink */
+      margin-bottom: 20px;
+    }
+
+        #leaderboardTable {
+            width: 40rem;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        #leaderboardTable th, #leaderboardTable td {
+            padding: 10px;
+            text-align: center;
+            vertical-align: middle;   /* vertical centering */
+            padding: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            
+
+        }
+        #leaderboardTable th.popupnumber,
+        #leaderboardTable td.popupnumber {
+  width: 5rem;
+  text-align: center;
+  background-color:black;
+  font-size: 2.5rem;
+  color: #F4C430;
+  font-family: "SubVario OT W03 Fat";
+  
+}
+
+#leaderboardTable th.popupname,
+#leaderboardTable td.popupname {
+  width: 20rem;
+  text-align: center;
+  background-color:black;
+  color: #F4C430;
+  font-family: "SubVario OT W03 Fat";
+  font-size: 2.5rem;
+}
+
+#leaderboardTable th.popuppoints,
+#leaderboardTable td.popuppoints {
+  width: 10rem;
+  text-align: center;
+  background-color: black;
+  color: #F4C430;
+  font-size: 2.5rem;
+  font-family: "SubVario OT W03 Fat";
+
+
+}
+
+#leaderboardTable th.popupdate,
+#leaderboardTable td.popupdate {
+  width: 10rem;
+  text-align: center;
+  background-color: black;
+  font-family: "SubVario OT W03 Fat";
+
+}
+
+
+        #leaderboardTable th {
+            background-color: #555;
+            color: #eee;
+        }
+
+        #leaderboardTable tr:nth-child(even) {
+            background-color: #3a3a3a;
+        }
+
+        #leaderboardTable tbody tr:hover {
+            background-color: #505050;
+        }
+
+        #closeLeaderboardBtn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        #closeLeaderboardBtn:hover,
+        #closeLeaderboardBtn:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Media Queries for Responsiveness */
+    @media (max-width: 600px) {
+      .popupgame-container {
+        border-width: 3px;
+        padding: 5px;
+        width: 95%; /* Take up more width on smaller screens */
+      }
+            #board {
+                width: 100%; /* Canvas fills container */
+                height: auto;
+            }
+            #showLeaderboardBtn {
+                padding: 6px 10px;
+                font-size: 12px;
+                top: 5px;
+                right: 5px;
+            }
+      .popupd-pad {
+                grid-template-columns: repeat(3, 35px);
+                grid-template-rows: repeat(3, 35px);
+            }
+      .popupd-pad-button {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+      .popupkeyboard-instructions {
+                display: none; /* Hide keyboard instructions on mobile */
+            }
+      .popupleaderboard-content {
+                width: 90%;
+                margin-top: 30px;
+            }
+        }
+   .popupglitch-box {
+  position: relative;
+  top: 0;
+  left: 0;
+  text-align: center;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.popupglitch-heading {
+font-family: 'Press Start 2P', cursive;
+ font-size: 6rem;
+  color: #F4C430;
+  text-shadow: 0 10px 7px rgba(0,0,0,0.4), 0 -10px 1px #fff;
+  letter-spacing: -3px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: transform 0.2s ease-in-out;
+  cursor: pointer;
+    -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.popupglitch-heading:hover {
+  animation: glitch 0.3s linear infinite;
+}
+
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+
+@media (max-width: 500px) {
+  .popupglitch-heading {
+    font-size: 3rem;
+    letter-spacing: 0;
+  }
+}
+
+        .popupanimate-charcter
+{
+   text-transform: uppercase;
+  background-image: linear-gradient(
+    -225deg,
+    white 0%,
+    #FFFF66 29%,
+    #fffff0  67%
+  );
+  background-size: auto auto;
+  background-clip: border-box;
+  background-size: 200% auto;
+  color: #fff;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textclip 2s linear infinite;
+  display: inline-block;
+      font-size: 2rem;
+      font-family: "SubVario OT W03 Fat";
+
+}
+
+@keyframes textclip {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.popupname,
+.popupanimate-charcter {
+  text-align: center;
+}

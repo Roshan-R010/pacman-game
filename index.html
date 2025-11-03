@@ -9,9 +9,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
     
+ <link href="https://fonts.googleapis.com/css2?family=Wendy+One&display=swap" rel="stylesheet">
+    
+    <link href="https://db.onlinewebfonts.com/c/c20ada4a7d0cbd8382e396667e00155b?family=SubVario+OT+W03+Fat" rel="stylesheet" type="text/css"/>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans&display=swap" rel="stylesheet">;
+
+
     <script src="pacman.js"></script>
     <link rel="stylesheet" href="pacman.css">
     
+
 </head>
 <body>
     <div class="game-container">
@@ -39,26 +51,23 @@
         <p class="keyboard-instructions">Use Arrow Keys or WASD to Move</p>
     </div>
 
-    <div id="leaderboardContainer" style="display: none;">
-        <div class="leaderboard-content">
-            <button id="closeLeaderboardBtn" aria-label="Close Leaderboard" class="absolute top-2 right-4 text-2xl">&times;</button>
+    <div id="leaderboardContainer">
+            <button id="closeLeaderboardBtn">&times;</button>
             <h2>Leaderboard</h2>
-            <div class="p-5">
-                <p id="loadingScores" class="text-center text-sm text-gray-500">Loading scores...</p>
-                <p id="leaderboardUser" class="text-xs mb-3 text-center text-gray-500">Your User ID: <span id="userIdDisplay"></span></p>
-                <table id="leaderboardTable">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Player Name</th>
-                            <th>Score</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
+      <div class="popupglitch-box"><h1 class="popupglitch-heading">Leaderboard</h1></div>
+      <br>
+            <table id="leaderboardTable">
+                <thead>
+                    <tr>
+            <th class="popupnumber"><span class="popupanimate-charcter"> Rank </span></th>
+            <th class="popupname"><span class="popupanimate-charcter"> Player Name </span></th>
+            <th class="popuppoints"><span class="popupanimate-charcter">Score</span></th>
+                    <!--    <th class="date"><span class="animate-charcter">Date</span></th>-->
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
         </div>
     </div>
 
