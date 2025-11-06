@@ -1,4 +1,4 @@
-//board
+// board
 let board;
 const rowCount = 21;
 const columnCount = 19;
@@ -17,8 +17,11 @@ let pacmanLeftImage;
 let pacmanRightImage;
 let wallImage;
 
-//X = wall, O = skip, P = pac man, ' ' = food
-//Ghosts: b = blue, o = orange, p = pink, r = red
+// ⭐ NEW: Holds the image object of the ghost currently doing the "chase" AI
+let chaserImage; 
+
+// X = wall, O = skip, P = pac man, ' ' = food
+// Ghosts: b = blue, o = orange, p = pink, r = red
 const tileMap = [
     "XXXXXXXXXXXXXXXXXXX",
     "X                 X",
@@ -51,7 +54,7 @@ let pacman = null;
 const directions = ['U', 'D', 'L', 'R']; //up down left right
 
 // ===================================
-// ⭐ SOUND OBJECTS ADDED HERE
+// ⭐ SOUND OBJECTS
 // ===================================
 const deathSound = new Audio('./pacman_death.wav');
 const beginningSound = new Audio('./pacman_beginning.wav'); 
@@ -67,9 +70,14 @@ let lives = 3;
 let gameOver = false;
 let gameStarted = false; 
 let gameLoopTimeout; 
-let scoreSubmitted = false; // Flag for Game Over Modal/Score Submission
-let gamePausedAfterDeath = false; // Flag to stop movement/collision during death animation
-let showStartMessage = true; // Flag to show "Press START to Play!"
+let scoreSubmitted = false; 
+let gamePausedAfterDeath = false; 
+let showStartMessage = true; 
+
+// 🚩 API Base URL for MongoDB Node.js Server
+// REMINDER: Change this to your DEPLOYED server's URL before deploying the game!
+const API_BASE_URL = 'http://localhost:3000'; 
+
 
 window.onload = function() {
     board = document.getElementById("board");
@@ -165,6 +173,16 @@ function loadImages() {
     pacmanRightImage.src = "./pacmanRight.jpg";
 }
 
+// ⭐ NEW FUNCTION: Assigns one ghost the chasing role randomly
+function assignChaser() {
+    const ghostImages = [blueGhostImage, orangeGhostImage, pinkGhostImage, redGhostImage];
+    const randomIndex = Math.floor(Math.random() * ghostImages.length);
+    chaserImage = ghostImages[randomIndex];
+    
+    console.log(`New Chaser assigned: ${chaserImage.src}`);
+}
+
+
 // Function to initialize/reset the game state
 function startGame(isRestart = false) {
     clearTimeout(gameLoopTimeout);
@@ -179,6 +197,9 @@ function startGame(isRestart = false) {
     scoreSubmitted = false;
     gamePausedAfterDeath = false; // Reset death pause
     
+    // ⭐ NEW: Assign a new chaser role on every game start/reset
+    assignChaser(); 
+
     // 3. Stop siren and play the beginning sound
     sirenSound.pause();
     sirenSound.currentTime = 0;
@@ -384,31 +405,23 @@ function draw() {
 function chooseBestChaseDirection(ghost) {
     if (!pacman) return null;
 
-    const ghostCenterX = ghost.x + ghost.width / 2;
-    const ghostCenterY = ghost.y + ghost.height / 2;
-    const pacmanCenterX = pacman.x + pacman.width / 2;
-    const pacmanCenterY = pacman.y + pacman.height / 2;
-
+    // Use current position and desired movement (speed) for collision check
+    const speed = tileSize / 4; 
     let bestDirection = ghost.direction;
     let minDistance = Infinity;
     
     const possibleDirections = ['U', 'D', 'L', 'R'];
-    const speed = tileSize / 4; 
 
     for (const direction of possibleDirections) {
-        // Prevent immediate reversal (e.g., Ghost going L should avoid R)
-        if (
-            (direction === 'U' && ghost.direction === 'D') ||
-            (direction === 'D' && ghost.direction === 'U') ||
-            (direction === 'L' && ghost.direction === 'R') ||
-            (direction === 'R' && ghost.direction === 'L')
-        ) {
+        // Prevent immediate reversal 
+        if (direction === ghost.getOppositeDirection()) {
             continue;
         }
 
         let tempX = ghost.x;
         let tempY = ghost.y;
 
+        // Project position based on potential direction
         if (direction === 'U') tempY -= speed;
         else if (direction === 'D') tempY += speed;
         else if (direction === 'L') tempX -= speed;
@@ -425,10 +438,10 @@ function chooseBestChaseDirection(ghost) {
             }
         }
         
-        // Skip this direction if it leads to a collision
+        // Skip this direction if it leads to a wall collision
         if (collidesWithWall) continue;
         
-        // Calculate Manhattan distance to Pacman (distance = |dx| + |dy|)
+        // Calculate Manhattan distance to Pacman 
         const newDist = Math.abs(tempX - pacman.x) + Math.abs(tempY - pacman.y);
 
         if (newDist < minDistance) {
@@ -468,10 +481,6 @@ function move() {
 
     // 3. Ghost Movement and Collision
     for (let ghost of ghosts.values()) {
-        // Trigger velocity once the game starts
-        if (ghost.velocityX === 0 && ghost.velocityY === 0) {
-            // Note: velocity is set in startGame/resetPositions. This is a redundant check now.
-        }
         
         // Ghost-Pacman Collision Check
         if (collision(ghost, pacman)) { 
@@ -515,17 +524,13 @@ function move() {
             return; 
         }
 
-        // --- START NEW GHOST MOVEMENT LOGIC (Copied from first code block's `move` function) ---
+        // --- GHOST MOVEMENT LOGIC (Fixed and Upgraded) ---
         
-        // Trigger velocity once the game starts
-        if (ghost.velocityX === 0 && ghost.velocityY === 0) {
-            ghost.updateVelocity(); 
-        }
-
-        // Ghost Movement Logic (house exit)
+        // Ghost House Exit 
         const currentTileCol = Math.round(ghost.x / tileSize);
         const currentTileRow = Math.round(ghost.y / tileSize);
 
+        // If in the center of the ghost box, force move up to exit
         if (currentTileRow === 9 && (currentTileCol === 8 || currentTileCol === 9 || currentTileCol === 10)) {
             if (ghost.canMoveInDirection('U')) {
                 ghost.direction = 'U';
@@ -533,63 +538,53 @@ function move() {
             }
         }
 
-
+        // 1. Apply current velocity
         ghost.x += ghost.velocityX;
         ghost.y += ghost.velocityY;
         
-        // Ghost collision with wall logic
-        for (let wall of walls.values()) {
-            if (collision(ghost, wall) || ghost.x < 0 || ghost.x + ghost.width > boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
-                
-                // 1. Rollback position
-                ghost.x -= ghost.velocityX;
-                ghost.y -= ghost.velocityY;
-                
-                // 2. Stop movement
-                ghost.velocityX = 0;
-                ghost.velocityY = 0;
-                
-                // 3. Choose a valid, non-colliding direction
-                ghost.chooseNewDirection();
-                break;
+        // 2. PATHING LOGIC (Intersection check)
+        // Check if ghost is near the center of a tile to attempt a turn (4 pixel buffer)
+        if (Math.abs(ghost.x % tileSize) < 4 && Math.abs(ghost.y % tileSize) < 4) { 
+            // Snap to center for clean movement before turning
+            const col = Math.round(ghost.x / tileSize);
+            const row = Math.round(ghost.y / tileSize);
+            ghost.x = col * tileSize;
+            ghost.y = row * tileSize;
+
+            // ⭐ CHECK CHASER ROLE
+            if (ghost.image === chaserImage) {
+                // CHASER GHOST: Uses targeted AI (Blinky's behavior)
+                const bestDirection = chooseBestChaseDirection(ghost);
+                if (bestDirection) {
+                    ghost.direction = bestDirection;
+                    ghost.updateVelocity();
+                }
+            } else {
+                // OTHER GHOSTS: Use random movement
+                ghost.chooseNewDirection(); 
             }
         }
         
-        // 4. SMART PATHING (Preventing looping in straightaways and encouraging exploration)
-        if (Math.abs(ghost.x % tileSize) < tileSize / 2 && Math.abs(ghost.y % tileSize) < tileSize / 2) { 
-            let possibleTurns = [];
-            if (ghost.direction === 'U' || ghost.direction === 'D') { 
-                if (ghost.canMoveInDirection('L')) possibleTurns.push('L');
-                if (ghost.canMoveInDirection('R')) possibleTurns.push('R');
-            } else { 
-                if (ghost.canMoveInDirection('U')) possibleTurns.push('U');
-                if (ghost.canMoveInDirection('D')) possibleTurns.push('D');
-            }
-
-            if (ghost.canMoveInDirection(ghost.direction)) {
-                possibleTurns.push(ghost.direction);
-            }
-            
-            let nonReversalTurns = possibleTurns.filter(dir => dir !== ghost.getOppositeDirection());
-            if (nonReversalTurns.length === 0) {
-                nonReversalTurns = possibleTurns;
-            }
-
-            if (nonReversalTurns.length > 0) {
-                nonReversalTurns.sort(() => Math.random() - 0.5);
-                ghost.direction = nonReversalTurns[0];
-                ghost.updateVelocity();
-            } else {
-                if (ghost.canMoveInDirection(ghost.getOppositeDirection())) {
-                    ghost.direction = ghost.getOppositeDirection();
-                    ghost.updateVelocity();
-                } else {
-                    ghost.velocityX = 0;
-                    ghost.velocityY = 0;
-                }
+        // 3. Ghost collision with wall logic (Rollback if collision occurs)
+        let hitWall = false;
+        for (let wall of walls.values()) {
+            if (collision(ghost, wall) || ghost.x < 0 || ghost.x + ghost.width > boardWidth || ghost.y < 0 || ghost.y + ghost.height > boardHeight) {
+                
+                // Rollback position
+                ghost.x -= ghost.velocityX;
+                ghost.y -= ghost.velocityY;
+                
+                // Stop movement and force a random change
+                ghost.velocityX = 0;
+                ghost.velocityY = 0;
+                
+                // Choose a new random direction immediately upon hitting a wall
+                ghost.chooseNewDirection();
+                hitWall = true;
+                break;
             }
         }
-        // --- END NEW GHOST MOVEMENT LOGIC ---
+        // --- END GHOST MOVEMENT LOGIC ---
     }
 
     // 4. Check Food Collision
@@ -681,7 +676,7 @@ function resetPositions() {
 }
 
 // ===================================
-// LEADERBOARD FUNCTIONS
+// LEADERBOARD FUNCTIONS (MODIFIED FOR MONGODB API)
 // ===================================
 
 function submitFinalScore() {
@@ -700,7 +695,8 @@ function submitFinalScore() {
 function sendScore(playerName, finalScore) {
     if (finalScore <= 0) return; 
 
-    fetch('submit_score.php', {
+    // NEW API ENDPOINT
+    fetch(`${API_BASE_URL}/api/submit_score`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -715,16 +711,20 @@ function sendScore(playerName, finalScore) {
         console.log('Score submission result:', data);
         if (data.success) {
             alert("Score submitted! Check the leaderboard.");
+        } else {
+            console.error('Error on submit:', data.message);
+            alert('Could not submit score: ' + data.message);
         }
     })
     .catch((error) => {
         console.error('Error submitting score. Is your server running?', error);
-        alert('Could not submit score. Server connection error.');
+        alert('Connection error submitting score. Check server console.');
     });
 }
 
 function fetchLeaderboard() {
-    fetch('get_leaderboard.php')
+    // NEW API ENDPOINT
+    fetch(`${API_BASE_URL}/api/get_leaderboard`)
     .then(response => response.json())
     .then(data => {
         if (data.success) {
@@ -762,7 +762,7 @@ function displayLeaderboard(leaderboardData) {
 
 
 // ===================================
-// BLOCK CLASS (with imported ghost logic)
+// BLOCK CLASS 
 // ===================================
 
 class Block {
@@ -833,30 +833,20 @@ class Block {
         }
     }
 
-    // ⭐ IMPORTED GHOST LOGIC METHOD 1: Random, non-colliding direction chooser
+    // ⭐ GHOST LOGIC METHOD 1: Random, non-colliding direction chooser
     chooseNewDirection() {
         const currentDirection = this.direction;
         const oppositeDirection = this.getOppositeDirection();
         
-        // Prioritize turning off the current axis if possible
-        let potentialDirections = directions.filter(dir => 
-            (currentDirection === 'U' || currentDirection === 'D') ? (dir === 'L' || dir === 'R') : (dir === 'U' || dir === 'D')
-        );
-        
-        // Add current direction as a possibility
-        potentialDirections.push(currentDirection);
-
-        // Add the opposite direction as a last resort, but only once
-        if (!potentialDirections.includes(oppositeDirection)) {
-            potentialDirections.push(oppositeDirection);
-        }
+        // Prioritize turns, exclude the reverse direction initially
+        let potentialDirections = directions.filter(dir => dir !== oppositeDirection);
 
         // Shuffle for randomness
         potentialDirections.sort(() => Math.random() - 0.5);
 
         let newDirection = null;
 
-        // Try to find a valid direction
+        // Try to find a valid direction (Non-reversing directions first)
         for (const dir of potentialDirections) {
             if (this.canMoveInDirection(dir)) {
                 newDirection = dir;
@@ -864,23 +854,24 @@ class Block {
             }
         }
         
+        if (!newDirection) {
+            // Last resort: If stuck, try reversing
+             if (this.canMoveInDirection(oppositeDirection)) {
+                newDirection = oppositeDirection;
+             }
+        }
+
         if (newDirection) {
              this.direction = newDirection;
              this.updateVelocity();
         } else {
-            // If still stuck, try reversing as the only option
-            if (this.canMoveInDirection(oppositeDirection)) {
-                this.direction = oppositeDirection;
-                this.updateVelocity();
-            } else {
-                // If completely stuck, stop movement
-                this.velocityX = 0;
-                this.velocityY = 0;
-            }
+            // If completely stuck, stop movement
+             this.velocityX = 0;
+             this.velocityY = 0;
         }
     }
     
-    // ⭐ IMPORTED GHOST LOGIC METHOD 2: Get opposite direction
+    // ⭐ GHOST LOGIC METHOD 2: Get opposite direction
     getOppositeDirection() {
         if (this.direction === 'U') return 'D';
         if (this.direction === 'D') return 'U';
@@ -889,7 +880,7 @@ class Block {
         return null; 
     }
     
-    // ⭐ IMPORTED GHOST LOGIC METHOD 3: Check if a direction is valid/non-colliding
+    // ⭐ GHOST LOGIC METHOD 3: Check if a direction is valid/non-colliding
     canMoveInDirection(testDirection) {
         const originalX = this.x;
         const originalY = this.y;
